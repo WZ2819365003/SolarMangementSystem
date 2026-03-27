@@ -1,0 +1,67 @@
+.el-table {
+  background: transparent;
+  color: var(--pvms-text-primary);
+}
+
+.el-table th,
+.el-table tr,
+.el-table td {
+  background: transparent;
+}
+
+.el-table thead th {
+  color: var(--pvms-text-secondary);
+  font-weight: 500;
+}
+
+.el-table::before {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.el-table--enable-row-hover .el-table__body tr:hover > td {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.el-input__inner,
+.el-textarea__inner,
+.el-select .el-input__inner {
+  background: rgba(5, 23, 56, 0.8);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--pvms-text-primary);
+}
+
+.el-input__inner:hover,
+.el-select:hover .el-input__inner {
+  border-color: rgba(6, 162, 153, 0.7);
+}
+
+.el-form-item__label {
+  color: var(--pvms-text-secondary);
+}
+
+.el-button--default {
+  color: var(--pvms-text-secondary);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.el-button--default:hover,
+.el-button--default:focus {
+  color: var(--pvms-text-primary);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.el-button--primary {
+  background: var(--pvms-primary);
+  border-color: var(--pvms-primary);
+}
+
+.el-tag {
+  border: none;
+}
+
+.el-pagination {
+  margin-top: 16px;
+  text-align: right;
+}

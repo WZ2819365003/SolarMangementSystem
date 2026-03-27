@@ -1,0 +1,5 @@
+dist/
+vendor/
+tests/playwright/node_modules/
+tests/playwright/output/
+tests/playwright/test-results/
