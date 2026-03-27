@@ -1,0 +1,4 @@
+cn\techstar\pvms\backend\module\system\controller\SystemHealthControllerTest.class
+cn\techstar\pvms\backend\module\stations\controller\StationControllerTest.class
+cn\techstar\pvms\backend\module\dashboard\controller\DashboardControllerTest.class
+cn\techstar\pvms\backend\module\productionmonitor\controller\ProductionMonitorControllerTest.class

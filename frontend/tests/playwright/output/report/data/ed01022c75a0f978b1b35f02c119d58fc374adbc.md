@@ -1,0 +1,358 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - complementary [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: PV
+      - generic [ref=e6]:
+        - generic [ref=e7]: 光伏管理系统
+        - generic [ref=e8]: 面向虚拟电厂聚合商的生产监控、告警与运营分析前端子应用
+    - generic [ref=e9]:
+      - generic [ref=e10]: 当前站群
+      - generic [ref=e11]: 示范园区光伏集群
+    - menubar [ref=e12]:
+      - menuitem " 综合监控中心" [ref=e13] [cursor=pointer]:
+        - generic [ref=e14]: 
+        - text: 综合监控中心
+      - menuitem " 生产监控层" [ref=e15] [cursor=pointer]:
+        - generic [ref=e16]: 
+        - text: 生产监控层
+      - menuitem " 电站档案" [ref=e17] [cursor=pointer]:
+        - generic [ref=e18]: 
+        - text: 电站档案
+      - menuitem " 设备监控" [ref=e19] [cursor=pointer]:
+        - generic [ref=e20]: 
+        - text: 设备监控
+      - menuitem " 告警中心" [ref=e21] [cursor=pointer]:
+        - generic [ref=e22]: 
+        - text: 告警中心
+    - generic [ref=e23]:
+      - generic [ref=e24]: Standalone
+      - paragraph [ref=e25]: 当前骨架已按宿主主题变量和微前端协议初始化。
+  - generic [ref=e26]:
+    - generic [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]: 生产监控层
+        - heading "资源总览" [level=1] [ref=e30]
+      - generic [ref=e31]:
+        - generic [ref=e32]: 开
+        - generic [ref=e33]:
+          - generic [ref=e34]: 开发联调用户
+          - generic [ref=e35]: 本地预览模式
+    - main [ref=e36]:
+      - generic [ref=e37]:
+        - generic [ref=e39]:
+          - generic [ref=e40]:
+            - generic [ref=e41]: M02 Production Monitor
+            - heading "生产监控层" [level=1] [ref=e42]
+            - paragraph [ref=e43]: 以虚拟电厂聚合商视角，在同一模块内查看资源单元总览、出力分析、调度执行与光伏气象研判。
+          - generic [ref=e45]:
+            - generic [ref=e46]:
+              - generic [ref=e47]: 成都西部基地聚合单元
+              - generic [ref=e48]:
+                - generic [ref=e49]: 正常
+                - generic [ref=e50]: 西南区域
+                - generic [ref=e51]: 成都
+            - generic [ref=e52]:
+              - generic [ref=e53]:
+                - generic [ref=e54]: 当前视图
+                - strong [ref=e55]: 资源总览
+              - generic [ref=e56]:
+                - generic [ref=e57]: 成员电站
+                - strong [ref=e58]: 4 座
+              - generic [ref=e59]:
+                - generic [ref=e60]: 站群最大距离
+                - strong [ref=e61]: 13 km
+        - generic [ref=e62]:
+          - button "资源总览" [ref=e63] [cursor=pointer]
+          - button "出力分析" [ref=e64] [cursor=pointer]
+          - button "调度执行" [ref=e65] [cursor=pointer]
+          - button "气象研判" [ref=e66] [cursor=pointer]
+        - generic [ref=e67]:
+          - generic [ref=e68]:
+            - generic [ref=e69]:
+              - generic [ref=e70]: 所属区域
+              - generic [ref=e73]:
+                - textbox "全部区域" [ref=e74] [cursor=pointer]
+                - generic [ref=e76] [cursor=pointer]: 
+            - generic [ref=e77]:
+              - generic [ref=e78]: 所属城市
+              - generic [ref=e81]:
+                - textbox "全部城市" [ref=e82] [cursor=pointer]
+                - generic [ref=e84] [cursor=pointer]: 
+            - generic [ref=e85]:
+              - generic [ref=e86]: 资源单元
+              - generic [ref=e89]:
+                - textbox "请选择资源单元" [ref=e90] [cursor=pointer]: 成都西部基地聚合单元
+                - generic [ref=e92] [cursor=pointer]: 
+            - generic [ref=e93]:
+              - generic [ref=e94]: 时间粒度
+              - generic [ref=e97]:
+                - textbox "15分钟" [ref=e98] [cursor=pointer]: 15 分钟
+                - generic [ref=e100] [cursor=pointer]: 
+            - generic [ref=e101]:
+              - generic [ref=e102]: 日期
+              - generic [ref=e104]:
+                - textbox "请选择日期" [ref=e105]: 2026-03-23
+                - generic [ref=e107]: 
+          - generic [ref=e108]:
+            - button " 刷新" [ref=e109] [cursor=pointer]:
+              - generic [ref=e110]: 
+              - text: 刷新
+            - button " 查询" [active] [ref=e111] [cursor=pointer]:
+              - generic [ref=e112]: 
+              - text: 查询
+            - button " 导出" [ref=e113] [cursor=pointer]:
+              - generic [ref=e114]: 
+              - text: 导出
+        - generic [ref=e115]:
+          - generic [ref=e116]:
+            - generic [ref=e118]:
+              - heading "资源单元信息" [level=2] [ref=e119]
+              - paragraph [ref=e120]: 同区位电站共享天气与出力趋势，只在负荷分摊比例上不同
+            - generic [ref=e122]:
+              - generic [ref=e123]:
+                - generic [ref=e124]: 资源单元
+                - strong [ref=e125]: 成都西部基地聚合单元
+              - generic [ref=e126]:
+                - generic [ref=e127]: 聚合区域
+                - strong [ref=e128]: 西南区域 / 成都
+              - generic [ref=e129]:
+                - generic [ref=e130]: 调度模式
+                - strong [ref=e131]: 日前基线 + 实时优化
+              - generic [ref=e132]:
+                - generic [ref=e133]: 成员电站
+                - strong [ref=e134]: 4 座
+              - generic [ref=e135]:
+                - generic [ref=e136]: 站群最大距离
+                - strong [ref=e137]: 13 km
+              - generic [ref=e138]:
+                - generic [ref=e139]: 策略描述
+                - strong [ref=e140]: 成都西部基地相邻园区光伏站群共享天气建模，当前可稳定提供上下调能力。
+          - generic [ref=e141]:
+            - article [ref=e142]:
+              - generic [ref=e143]:
+                - generic [ref=e145]: 
+                - generic [ref=e146]: 实时总出力
+              - generic [ref=e147]: 4.06 MW
+              - generic [ref=e148]: 当前资源单元聚合总出力
+            - article [ref=e149]:
+              - generic [ref=e150]:
+                - generic [ref=e152]: 
+                - generic [ref=e153]: 当日累计电量
+              - generic [ref=e154]: 29.1 MWh
+              - generic [ref=e155]: 当前日内累计电量
+            - article [ref=e156]:
+              - generic [ref=e157]:
+                - generic [ref=e159]: 
+                - generic [ref=e160]: 上调可调能力
+              - generic [ref=e161]: 1.02 MW
+              - generic [ref=e162]: 当前可承接上调空间
+            - article [ref=e163]:
+              - generic [ref=e164]:
+                - generic [ref=e166]: 
+                - generic [ref=e167]: 下调可调能力
+              - generic [ref=e168]: 1.38 MW
+              - generic [ref=e169]: 当前可承接下调空间
+            - article [ref=e170]:
+              - generic [ref=e171]:
+                - generic [ref=e173]: 
+                - generic [ref=e174]: 在线率
+              - generic [ref=e175]: 97.8 %
+              - generic [ref=e176]: 按成员电站在线质量聚合
+            - article [ref=e177]:
+              - generic [ref=e178]:
+                - generic [ref=e180]: 
+                - generic [ref=e181]: 预测准确率
+              - generic [ref=e182]: 95.1 %
+              - generic [ref=e183]: 同区域天气下的资源单元预测命中率
+          - generic [ref=e184]:
+            - generic [ref=e185]:
+              - generic [ref=e187]:
+                - heading "成员电站概况" [level=2] [ref=e188]
+                - paragraph [ref=e189]: 同区位电站共享天气与出力趋势，当前只按权重和状态分摊
+              - generic [ref=e192]:
+                - table [ref=e194]:
+                  - rowgroup [ref=e203]:
+                    - row "电站 状态 容量(MW) 实时出力(MW) 在线率 告警数 天气" [ref=e204]:
+                      - columnheader "电站" [ref=e205]:
+                        - generic [ref=e206]: 电站
+                      - columnheader "状态" [ref=e207]:
+                        - generic [ref=e208]: 状态
+                      - columnheader "容量(MW)" [ref=e209]:
+                        - generic [ref=e210]: 容量(MW)
+                      - columnheader "实时出力(MW)" [ref=e211]:
+                        - generic [ref=e212]: 实时出力(MW)
+                      - columnheader "在线率" [ref=e213]:
+                        - generic [ref=e214]: 在线率
+                      - columnheader "告警数" [ref=e215]:
+                        - generic [ref=e216]: 告警数
+                      - columnheader "天气" [ref=e217]:
+                        - generic [ref=e218]: 天气
+                - table [ref=e220]:
+                  - rowgroup [ref=e229]:
+                    - row "成都西部基地 A 站 正常 1.7 1.26 98.2% 0 晴 / 24°C" [ref=e230]:
+                      - cell "成都西部基地 A 站" [ref=e231]:
+                        - generic [ref=e232]: 成都西部基地 A 站
+                      - cell "正常" [ref=e233]:
+                        - generic [ref=e235]: 正常
+                      - cell "1.7" [ref=e236]:
+                        - generic [ref=e237]: "1.7"
+                      - cell "1.26" [ref=e238]:
+                        - generic [ref=e239]: "1.26"
+                      - cell "98.2%" [ref=e240]:
+                        - generic [ref=e241]: 98.2%
+                      - cell "0" [ref=e242]:
+                        - generic [ref=e243]: "0"
+                      - cell "晴 / 24°C" [ref=e244]:
+                        - generic [ref=e245]: 晴 / 24°C
+                    - row "成都连廊产区 B 站 正常 1.5 1.14 97.5% 0 晴 / 24°C" [ref=e246]:
+                      - cell "成都连廊产区 B 站" [ref=e247]:
+                        - generic [ref=e248]: 成都连廊产区 B 站
+                      - cell "正常" [ref=e249]:
+                        - generic [ref=e251]: 正常
+                      - cell "1.5" [ref=e252]:
+                        - generic [ref=e253]: "1.5"
+                      - cell "1.14" [ref=e254]:
+                        - generic [ref=e255]: "1.14"
+                      - cell "97.5%" [ref=e256]:
+                        - generic [ref=e257]: 97.5%
+                      - cell "0" [ref=e258]:
+                        - generic [ref=e259]: "0"
+                      - cell "晴 / 24°C" [ref=e260]:
+                        - generic [ref=e261]: 晴 / 24°C
+                    - row "成都仓储园 C 站 告警 1.3 0.82 95.9% 1 晴 / 24°C" [ref=e262]:
+                      - cell "成都仓储园 C 站" [ref=e263]:
+                        - generic [ref=e264]: 成都仓储园 C 站
+                      - cell "告警" [ref=e265]:
+                        - generic [ref=e267]: 告警
+                      - cell "1.3" [ref=e268]:
+                        - generic [ref=e269]: "1.3"
+                      - cell "0.82" [ref=e270]:
+                        - generic [ref=e271]: "0.82"
+                      - cell "95.9%" [ref=e272]:
+                        - generic [ref=e273]: 95.9%
+                      - cell "1" [ref=e274]:
+                        - generic [ref=e275]: "1"
+                      - cell "晴 / 24°C" [ref=e276]:
+                        - generic [ref=e277]: 晴 / 24°C
+                    - row "成都配套园 D 站 正常 1.1 0.73 98.4% 0 晴 / 24°C" [ref=e278]:
+                      - cell "成都配套园 D 站" [ref=e279]:
+                        - generic [ref=e280]: 成都配套园 D 站
+                      - cell "正常" [ref=e281]:
+                        - generic [ref=e283]: 正常
+                      - cell "1.1" [ref=e284]:
+                        - generic [ref=e285]: "1.1"
+                      - cell "0.73" [ref=e286]:
+                        - generic [ref=e287]: "0.73"
+                      - cell "98.4%" [ref=e288]:
+                        - generic [ref=e289]: 98.4%
+                      - cell "0" [ref=e290]:
+                        - generic [ref=e291]: "0"
+                      - cell "晴 / 24°C" [ref=e292]:
+                        - generic [ref=e293]: 晴 / 24°C
+            - generic [ref=e294]:
+              - generic [ref=e296]:
+                - heading "光伏天气快报" [level=2] [ref=e297]
+                - paragraph [ref=e298]: 同一资源单元内电站共享同城市天气剖面
+              - generic [ref=e300]:
+                - generic [ref=e301]:
+                  - generic [ref=e302]:
+                    - generic [ref=e303]: 晴
+                    - generic [ref=e304]: 24°C
+                  - generic [ref=e305]: 少云
+                - generic [ref=e306]:
+                  - generic [ref=e307]:
+                    - generic [ref=e308]: 辐照度
+                    - strong [ref=e309]: 648 W/m²
+                  - generic [ref=e310]:
+                    - generic [ref=e311]: 湿度
+                    - strong [ref=e312]: 57%
+                  - generic [ref=e313]:
+                    - generic [ref=e314]: 风速
+                    - strong [ref=e315]: 2.4 m/s
+                - paragraph [ref=e316]: 辐照度和温度均处于稳定区间，当前具备较好调度弹性。
+            - generic [ref=e317]:
+              - generic [ref=e319]:
+                - heading "告警快报" [level=2] [ref=e320]
+                - paragraph [ref=e321]: 聚合商需要的最小告警汇总信息
+              - generic [ref=e323]:
+                - generic [ref=e324]:
+                  - generic [ref=e325]:
+                    - generic [ref=e326]: 未处理
+                    - strong [ref=e327]: "1"
+                  - generic [ref=e328]:
+                    - generic [ref=e329]: 严重
+                    - strong [ref=e330]: "0"
+                  - generic [ref=e331]:
+                    - generic [ref=e332]: 重要
+                    - strong [ref=e333]: "0"
+                  - generic [ref=e334]:
+                    - generic [ref=e335]: 一般
+                    - strong [ref=e336]: "1"
+                - generic [ref=e337]:
+                  - generic [ref=e338]: 成都仓储园 C 站传感器上报偶发延迟，已自动补采。
+                  - generic [ref=e339]: 2026-03-23 13:26:00
+            - generic [ref=e340]:
+              - generic [ref=e342]:
+                - heading "运行摘要" [level=2] [ref=e343]
+                - paragraph [ref=e344]: 当前资源单元小时级运行摘要，采用统一深色数据面板承载
+              - generic [ref=e347]:
+                - table [ref=e349]:
+                  - rowgroup [ref=e357]:
+                    - row "时间 实时出力(MW) 可调容量(MW) 在线率 预测偏差率 天气结论" [ref=e358]:
+                      - columnheader "时间" [ref=e359]:
+                        - generic [ref=e360]: 时间
+                      - columnheader "实时出力(MW)" [ref=e361]:
+                        - generic [ref=e362]: 实时出力(MW)
+                      - columnheader "可调容量(MW)" [ref=e363]:
+                        - generic [ref=e364]: 可调容量(MW)
+                      - columnheader "在线率" [ref=e365]:
+                        - generic [ref=e366]: 在线率
+                      - columnheader "预测偏差率" [ref=e367]:
+                        - generic [ref=e368]: 预测偏差率
+                      - columnheader "天气结论" [ref=e369]:
+                        - generic [ref=e370]: 天气结论
+                - table [ref=e372]:
+                  - rowgroup [ref=e380]:
+                    - row "09:00 3 4.82 97.2% -0.6% 辐照度和温度均处于稳定区间，当前具备较好调度弹性。" [ref=e381]:
+                      - cell "09:00" [ref=e382]:
+                        - generic [ref=e383]: 09:00
+                      - cell "3" [ref=e384]:
+                        - generic [ref=e385]: "3"
+                      - cell "4.82" [ref=e386]:
+                        - generic [ref=e387]: "4.82"
+                      - cell "97.2%" [ref=e388]:
+                        - generic [ref=e389]: 97.2%
+                      - cell "-0.6%" [ref=e390]:
+                        - generic [ref=e391]: "-0.6%"
+                      - cell "辐照度和温度均处于稳定区间，当前具备较好调度弹性。" [ref=e392]:
+                        - generic [ref=e393]: 辐照度和温度均处于稳定区间，当前具备较好调度弹性。
+                    - row "12:00 3.9 5.26 97.8% -1.7% 辐照度和温度均处于稳定区间，当前具备较好调度弹性。" [ref=e394]:
+                      - cell "12:00" [ref=e395]:
+                        - generic [ref=e396]: 12:00
+                      - cell "3.9" [ref=e397]:
+                        - generic [ref=e398]: "3.9"
+                      - cell "5.26" [ref=e399]:
+                        - generic [ref=e400]: "5.26"
+                      - cell "97.8%" [ref=e401]:
+                        - generic [ref=e402]: 97.8%
+                      - cell "-1.7%" [ref=e403]:
+                        - generic [ref=e404]: "-1.7%"
+                      - cell "辐照度和温度均处于稳定区间，当前具备较好调度弹性。" [ref=e405]:
+                        - generic [ref=e406]: 辐照度和温度均处于稳定区间，当前具备较好调度弹性。
+                    - row "15:00 4.06 5.6 97.8% -2.2% 辐照度和温度均处于稳定区间，当前具备较好调度弹性。" [ref=e407]:
+                      - cell "15:00" [ref=e408]:
+                        - generic [ref=e409]: 15:00
+                      - cell "4.06" [ref=e410]:
+                        - generic [ref=e411]: "4.06"
+                      - cell "5.6" [ref=e412]:
+                        - generic [ref=e413]: "5.6"
+                      - cell "97.8%" [ref=e414]:
+                        - generic [ref=e415]: 97.8%
+                      - cell "-2.2%" [ref=e416]:
+                        - generic [ref=e417]: "-2.2%"
+                      - cell "辐照度和温度均处于稳定区间，当前具备较好调度弹性。" [ref=e418]:
+                        - generic [ref=e419]: 辐照度和温度均处于稳定区间，当前具备较好调度弹性。
+```

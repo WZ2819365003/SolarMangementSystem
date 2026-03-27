@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: cn.techstar.pvms.backend.module.system.controller.SystemHealthControllerTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.030 s -- in cn.techstar.pvms.backend.module.system.controller.SystemHealthControllerTest

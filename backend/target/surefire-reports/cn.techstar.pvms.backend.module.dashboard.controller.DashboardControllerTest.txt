@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: cn.techstar.pvms.backend.module.dashboard.controller.DashboardControllerTest
+-------------------------------------------------------------------------------
+Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.417 s -- in cn.techstar.pvms.backend.module.dashboard.controller.DashboardControllerTest
