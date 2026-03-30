@@ -215,3 +215,71 @@ export function fetchForecastComparison(params) {
 export function fetchForecastDeviationHeatmap(params) {
   return request('/pvms/forecast/deviation-heatmap', { method: 'get', params })
 }
+
+export function fetchStrategyMeta() {
+  return request('/pvms/strategy/meta', { method: 'get' })
+}
+
+export function fetchStrategyTree(params) {
+  return request('/pvms/strategy/tree', { method: 'get', params })
+}
+
+export function fetchStrategyKpi(params) {
+  return request('/pvms/strategy/kpi', { method: 'get', params })
+}
+
+export function fetchStrategyList(params) {
+  return request('/pvms/strategy/list', { method: 'get', params })
+}
+
+export function fetchStrategyDetail(params) {
+  return request('/pvms/strategy/detail', { method: 'get', params })
+}
+
+export function fetchStrategyElectricityPrice(params) {
+  return request('/pvms/strategy/electricity-price', { method: 'get', params })
+}
+
+export function createStrategy(data) {
+  return request('/pvms/strategy/create', { method: 'post', data })
+}
+
+export function batchCreateStrategy(data) {
+  return request('/pvms/strategy/batch-create', { method: 'post', data })
+}
+
+export function submitStrategy(params) {
+  return request('/pvms/strategy/submit', { method: 'post', params })
+}
+
+export function terminateStrategy(params) {
+  return request('/pvms/strategy/terminate', { method: 'post', params })
+}
+
+export function batchSubmitStrategy(data) {
+  return request('/pvms/strategy/batch-submit', { method: 'post', data })
+}
+
+export function batchDeleteStrategy(data) {
+  return request('/pvms/strategy/batch-delete', { method: 'post', data })
+}
+
+export function simulateStrategy(data) {
+  return request('/pvms/strategy/simulate', { method: 'post', data })
+}
+
+export function batchSimulateStrategy(data) {
+  return request('/pvms/strategy/batch-simulate', { method: 'post', data })
+}
+
+export function fetchStrategyRevenueSummary(params) {
+  return request('/pvms/strategy/revenue/summary', { method: 'get', params })
+}
+
+export function fetchStrategyRevenueDetail(params) {
+  return request('/pvms/strategy/revenue/detail', { method: 'get', params })
+}
+
+export function fetchStrategyCompare(params) {
+  return request('/pvms/strategy/compare', { method: 'get', params })
+}
