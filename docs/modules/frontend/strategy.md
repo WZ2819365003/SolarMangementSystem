@@ -1,171 +1,207 @@
-# Strategy 前端模块
+# Strategy Frontend Module
 
-## 1. 模块定位
+## 1. 当前状态
 
-该模块对应菜单“策略管理”，承担策略从查看、配置到收益分析的一整套前端交互。
+截至 `2026-03-30`，前端已经有独立的 `strategy` 模块，不再只是文档或残留设计稿。
 
-页面入口：
+当前真实入口：
 
 - `frontend/src/modules/strategy/pages/StrategyPage.vue`
 
-## 2. 路由
+真实路由：
 
-| 路由 | viewKey | 说明 |
-| --- | --- | --- |
-| `/strategy/list` | `list` | 策略列表 |
-| `/strategy/config` | `config` | 策略配置 |
-| `/strategy/revenue` | `revenue` | 收益分析 |
+- `/strategy/list`
+- `/strategy/config`
+- `/strategy/revenue`
 
-## 3. 核心文件
+真实菜单：
+
+- `frontend/src/settings.js` 中的 `strategy`
+
+## 2. 模块结构
 
 | 路径 | 作用 |
 | --- | --- |
-| `pages/StrategyPage.vue` | 模块总入口，负责 tabs 和元数据初始化 |
+| `pages/StrategyPage.vue` | 模块页壳，负责 tabs、筛选条件、数据装配 |
 | `components/StrategyHero.vue` | 顶部说明区 |
-| `components/StrategyTabNav.vue` | 子标签导航 |
-| `components/views/StrategyListView.vue` | 列表、筛选、批量提交/删除 |
-| `components/views/StrategyConfigView.vue` | 树选择、单个/批量配置、模拟、创建、提交 |
-| `components/views/StrategyRevenueView.vue` | 收益趋势、明细、对比 |
+| `components/StrategyTabNav.vue` | 三个子视图的切换 |
+| `components/StrategyFilterBar.vue` | 公共筛选条件 |
+| `components/views/StrategyListView.vue` | 列表、详情抽屉、批量提交/删除 |
+| `components/views/StrategyConfigView.vue` | 树、表单、电价、单/批量模拟、创建 |
+| `components/views/StrategyRevenueView.vue` | 收益 KPI、趋势图、明细表、对比表 |
+
+## 3. 路由与 viewKey
+
+| 路由 | `viewKey` | 说明 |
+| --- | --- | --- |
+| `/strategy/list` | `list` | 策略台账和状态流转 |
+| `/strategy/config` | `config` | 策略配置与模拟 |
+| `/strategy/revenue` | `revenue` | 策略收益分析 |
+
+`StrategyPage.vue` 根据 `viewKey` 决定当前应该加载哪一个子视图。
 
 ## 4. 数据流
 
-### 元数据
+### 4.1 首次进入模块
 
 页面创建时先拉：
 
 - `fetchStrategyMeta`
 
-用于初始化：
+这一步会初始化：
 
-- 策略类型
-- 状态
-- 电站
-- 公司
-- 分时电价
+- 默认电站
+- 公司/区域筛选项
+- 电站筛选项
+- 策略类型筛选项
+- 策略状态筛选项
 
-### 列表页
+### 4.2 列表页
 
-主要接口：
+列表页当前会调用：
 
 - `fetchStrategyKpi`
 - `fetchStrategyList`
+
+点击详情时额外调用：
+
 - `fetchStrategyDetail`
+
+点击动作时会调用：
+
 - `submitStrategy`
 - `terminateStrategy`
 - `batchSubmitStrategy`
 - `batchDeleteStrategy`
 
-### 配置页
+### 4.3 配置页
 
-主要接口：
+配置页当前会调用：
 
 - `fetchStrategyTree`
+- `fetchStrategyElectricityPrice`
+- `fetchStrategyList`
 - `simulateStrategy`
 - `batchSimulateStrategy`
 - `createStrategy`
 - `batchCreateStrategy`
-- `submitStrategy`
 
-### 收益页
+注意：
 
-主要接口：
+- 电价表是后端接口，不再由前端静态写死
+- 模拟结果来自后端计算，不再走本地 mock
+
+### 4.4 收益页
+
+收益页当前会调用：
 
 - `fetchStrategyRevenueSummary`
 - `fetchStrategyRevenueDetail`
 - `fetchStrategyCompare`
 
-## 5. 配置页是本模块最复杂的部分
+## 5. 前端与后端契约
 
-`StrategyConfigView.vue` 同时承担以下职责：
+这次 M04 的一个重点，是把之前飘掉的字段名收回来。
 
-- 左侧公司/电站树展示
-- 单站与批量模式切换
-- 表单录入
-- 单策略收益模拟
-- 批量收益模拟
-- 创建策略
-- 创建后提交
+当前前端按下面这些字段消费：
 
-这也是它文件非常大的原因。
+- 树结构字段：`tree`
+- 单策略模拟区间：`confidenceRange`
+- 批量模拟结果数组：`results`
+- 批量模拟总收益：`totalRevenue`
+- 批量创建请求体：`{ strategies: [...] }`
 
-## 6. 当前前端期望的关键结构
+如果后端有人后续改字段名，优先改后端适配层，不要直接把字段漂移留给页面层承受。
 
-### 树结构
+## 6. 各视图维护要点
 
-配置页当前从 `fetchStrategyTree()` 返回结果里读取：
+### 6.1 StrategyListView
 
-- `res.data.tree`
+职责：
 
-### 批量模拟结果
+- 展示 KPI 卡片
+- 展示策略列表
+- 打开详情抽屉
+- 执行提交、终止、批量提交、批量删除
 
-批量模拟后当前读取：
+维护注意点：
 
-- `batchRes.data.results`
-- `batchRes.data.totalRevenue`
+- 表格字段来自 `list.items`
+- 抽屉字段来自 `detail`
+- 详情抽屉里 period 和 log 都是后端 detail 接口给出的
 
-### 单策略模拟结果
+### 6.2 StrategyConfigView
 
-当前界面读取：
+这是当前模块最复杂的视图。
 
-- `simulation.estimatedRevenue`
-- `simulation.confidenceRange`
-- `simulation.breakdown.peakSaving`
+职责：
 
-### 批量创建请求体
+- 显示公司/站点树
+- 维护策略表单
+- 拉取电价时段
+- 执行单策略模拟
+- 执行批量模拟
+- 创建单条策略
+- 批量创建策略
 
-当前前端组包为：
+维护注意点：
 
-- `{ strategies: [...] }`
+- `form` 只是前端输入态，真实结果以后台响应为准
+- `batchSimulate` 在没有勾选表格时，会按当前筛选范围自动挑两座站做候选
+- 电价变化必须重新走 `fetchStrategyElectricityPrice`
 
-## 7. 当前维护风险
+### 6.3 StrategyRevenueView
 
-这是与后端契约漂移最明显的模块之一。
+职责：
 
-已知风险包括：
+- 展示收益 KPI
+- 画趋势图
+- 展示收益明细
+- 展示策略对比
 
-- 树接口字段名不一致
-- 批量创建请求体字段名不一致
-- 批量模拟返回字段名不一致
-- 单策略模拟返回结构不一致
+维护注意点：
 
-因此维护本模块时，不能只在前端 mock 上验证成功就结束，必须同时对照：
+- 趋势图依赖 `summary.trend`
+- 对比图依赖 `compare.items`
+- 明细表依赖 `detail.items`
 
-- `frontend/src/shared/mock/strategy.js`
-- `backend/src/main/java/.../strategy/controller/StrategyController.java`
-- `backend/src/main/java/.../strategy/service/StrategyMockService.java`
+## 7. 手动联调时怎么检查
 
-## 8. 维护建议
+### 7.1 页面入口
 
-### 改列表页
+```text
+http://127.0.0.1:6618/strategy/list
+http://127.0.0.1:6618/strategy/config
+http://127.0.0.1:6618/strategy/revenue
+```
 
-注意批量操作对状态流转的依赖：
+### 7.2 开发态关键请求
 
-- `draft`
-- `pending`
-- `executing`
-- `completed`
-- `terminated`
+打开浏览器开发者工具，确认请求命中：
 
-### 改配置页
+- `/api/pvms/strategy/meta`
+- `/api/pvms/strategy/list`
+- `/api/pvms/strategy/tree`
+- `/api/pvms/strategy/simulate`
+- `/api/pvms/strategy/revenue/summary`
 
-建议先确认你改的是哪一类逻辑：
+## 8. 后续扩展建议
 
-- 树选择
-- 表单字段
-- 模拟逻辑
-- 创建逻辑
-- 提交流程
+### 8.1 如果继续做真实业务化
 
-否则很容易在一个超大文件里误伤其他流程。
+优先扩展：
 
-### 改收益页
+- 更细的策略表单字段
+- 真正的批量选站和批量编排
+- 更丰富的 compare 维度
+- 提交后自动刷新详情和收益页
 
-注意这里依赖 summary 和 detail 两条接口链路，还支持 compare 对比，不是单接口页面。
+### 8.2 如果后端换成真实系统
 
-## 9. 推荐阅读文件
+前端建议保持：
 
-- `frontend/src/modules/strategy/pages/StrategyPage.vue`
-- `frontend/src/modules/strategy/components/views/StrategyListView.vue`
-- `frontend/src/modules/strategy/components/views/StrategyConfigView.vue`
-- `frontend/src/modules/strategy/components/views/StrategyRevenueView.vue`
+- API 名称不变
+- 组件职责不变
+- 视图拆分不变
 
+这样后端只需要替换数据源和公式，不需要再重写页面。

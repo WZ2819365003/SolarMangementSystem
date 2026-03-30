@@ -5,6 +5,7 @@ import DeviceMonitorPage from '@/modules/devices/pages/DeviceMonitorPage.vue'
 import AlarmCenterPage from '@/modules/alarms/pages/AlarmCenterPage.vue'
 import ProductionMonitorPage from '@/modules/production-monitor/pages/ProductionMonitorPage.vue'
 const ForecastPage = () => import('@/modules/forecast/pages/ForecastPage.vue')
+const StrategyPage = () => import('@/modules/strategy/pages/StrategyPage.vue')
 
 const routes = [
   {
@@ -118,6 +119,42 @@ const routes = [
           summary: '评估预测精度趋势、偏差分布和电站精度排名',
           activeMenu: '/forecast/overview',
           viewKey: 'accuracy'
+        }
+      },
+      {
+        path: '/strategy/list',
+        name: 'strategy-list',
+        component: StrategyPage,
+        meta: {
+          title: '策略列表',
+          section: '策略管理',
+          summary: '查看策略台账、状态流转、收益快照和批量操作结果',
+          activeMenu: '/strategy/list',
+          viewKey: 'list'
+        }
+      },
+      {
+        path: '/strategy/config',
+        name: 'strategy-config',
+        component: StrategyPage,
+        meta: {
+          title: '策略配置',
+          section: '策略管理',
+          summary: '配置站点策略、查看树结构、电价窗口并执行模拟和创建',
+          activeMenu: '/strategy/list',
+          viewKey: 'config'
+        }
+      },
+      {
+        path: '/strategy/revenue',
+        name: 'strategy-revenue',
+        component: StrategyPage,
+        meta: {
+          title: '收益分析',
+          section: '策略管理',
+          summary: '查看策略收益趋势、明细拆分和策略对比结果',
+          activeMenu: '/strategy/list',
+          viewKey: 'revenue'
         }
       },
       {

@@ -13,17 +13,24 @@ export const appSettings = {
     },
     {
       key: 'production-monitor',
-      label: '生产监控层',
+      label: '生产监控',
       path: '/production-monitor/overview',
       icon: 'el-icon-s-operation',
-      description: '以虚拟电厂聚合商视角查看资源总览、电站监控、负荷与出力和调度执行'
+      description: '查看资源总览、电站监控、负荷与出力和调度执行'
     },
     {
       key: 'forecast',
-      label: '预测与分析',
+      label: '预测分析',
       path: '/forecast/overview',
       icon: 'el-icon-s-data',
-      description: '光伏功率预测、可调能力分析与精度评估'
+      description: '查看功率预测、可调能力分析和精度评估'
+    },
+    {
+      key: 'strategy',
+      label: '策略管理',
+      path: '/strategy/list',
+      icon: 'el-icon-s-management',
+      description: '管理策略台账、配置模拟和收益分析'
     },
     {
       key: 'devices',
