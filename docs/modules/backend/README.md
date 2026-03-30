@@ -25,9 +25,13 @@
 3. `production-monitor.md`
 4. `station-archive.md`
 
+补充说明：
+
+- `production-monitor.md` 当前已更新为 H2 + 后端计算链路说明，不再只是旧 mock 描述。
+- `dashboard.md` 也已经包含地图动态点位下沉后的维护边界。
+
 ## 维护提醒
 
 - 当前后端大量使用 `*MockService`
 - 接口测试主要集中在 `backend/src/test/java/.../module/`
 - 如果改了返回结构，必须同步确认前端页面读取字段和交接文档
-
