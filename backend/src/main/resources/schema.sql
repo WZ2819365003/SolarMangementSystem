@@ -2,6 +2,12 @@ DROP TABLE IF EXISTS dashboard_alarm_snapshot;
 DROP TABLE IF EXISTS dashboard_station_status_snapshot;
 DROP TABLE IF EXISTS dashboard_vpp_node_snapshot;
 DROP TABLE IF EXISTS dashboard_station;
+DROP TABLE IF EXISTS sa_inverter_alarm;
+DROP TABLE IF EXISTS sa_station_strategy;
+DROP TABLE IF EXISTS sa_inverter;
+DROP TABLE IF EXISTS sa_station_curve_15m;
+DROP TABLE IF EXISTS sa_station;
+DROP TABLE IF EXISTS sa_company;
 DROP TABLE IF EXISTS pm_station_curve_15m;
 DROP TABLE IF EXISTS pm_dispatch_record;
 DROP TABLE IF EXISTS pm_weather_snapshot;
@@ -143,4 +149,90 @@ CREATE TABLE pm_dispatch_record (
     deviation_reason VARCHAR(255) NOT NULL,
     CONSTRAINT fk_pm_dispatch_record_resource_unit
         FOREIGN KEY (resource_unit_id) REFERENCES pm_resource_unit(id)
+);
+
+CREATE TABLE sa_company (
+    id VARCHAR(32) PRIMARY KEY,
+    name VARCHAR(128) NOT NULL,
+    region VARCHAR(64) NOT NULL,
+    sort_index INT NOT NULL
+);
+
+CREATE TABLE sa_station (
+    id VARCHAR(32) PRIMARY KEY,
+    company_id VARCHAR(32) NOT NULL,
+    name VARCHAR(128) NOT NULL,
+    capacity_kwp DECIMAL(12, 2) NOT NULL,
+    status VARCHAR(32) NOT NULL,
+    data_quality VARCHAR(32) NOT NULL,
+    grid_status VARCHAR(32) NOT NULL,
+    grid_status_label VARCHAR(32) NOT NULL,
+    commission_date DATE NOT NULL,
+    address VARCHAR(255) NOT NULL,
+    load_base_kw DECIMAL(12, 2) NOT NULL,
+    sort_index INT NOT NULL,
+    CONSTRAINT fk_sa_station_company
+        FOREIGN KEY (company_id) REFERENCES sa_company(id)
+);
+
+CREATE TABLE sa_station_curve_15m (
+    station_id VARCHAR(32) NOT NULL,
+    biz_date DATE NOT NULL,
+    time_slot INT NOT NULL,
+    load_kw DECIMAL(12, 2) NOT NULL,
+    pv_output_kw DECIMAL(12, 2) NOT NULL,
+    forecast_day_ahead_kw DECIMAL(12, 2) NOT NULL,
+    forecast_ultra_short_kw DECIMAL(12, 2) NOT NULL,
+    PRIMARY KEY (station_id, biz_date, time_slot),
+    CONSTRAINT fk_sa_station_curve_station
+        FOREIGN KEY (station_id) REFERENCES sa_station(id)
+);
+
+CREATE TABLE sa_inverter (
+    id VARCHAR(32) PRIMARY KEY,
+    station_id VARCHAR(32) NOT NULL,
+    name VARCHAR(128) NOT NULL,
+    sort_index INT NOT NULL,
+    rated_power_kw DECIMAL(12, 2) NOT NULL,
+    status VARCHAR(32) NOT NULL,
+    model VARCHAR(64) NOT NULL,
+    manufacturer VARCHAR(64) NOT NULL,
+    serial_no VARCHAR(64) NOT NULL,
+    firmware_version VARCHAR(64) NOT NULL,
+    install_date DATE NOT NULL,
+    mppt_channels INT NOT NULL,
+    dc_input_voltage_v DECIMAL(12, 2) NOT NULL,
+    ac_output_voltage_v DECIMAL(12, 2) NOT NULL,
+    grid_frequency_hz DECIMAL(5, 2) NOT NULL,
+    module_temperature_c DECIMAL(5, 2) NOT NULL,
+    ambient_temperature_c DECIMAL(5, 2) NOT NULL,
+    string_count INT NOT NULL,
+    panels_per_string INT NOT NULL,
+    CONSTRAINT fk_sa_inverter_station
+        FOREIGN KEY (station_id) REFERENCES sa_station(id)
+);
+
+CREATE TABLE sa_station_strategy (
+    station_id VARCHAR(32) PRIMARY KEY,
+    name VARCHAR(128) NOT NULL,
+    type VARCHAR(32) NOT NULL,
+    status VARCHAR(32) NOT NULL,
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP NOT NULL,
+    target_power_kw DECIMAL(12, 2) NOT NULL,
+    estimated_revenue_cny DECIMAL(12, 2) NOT NULL,
+    CONSTRAINT fk_sa_station_strategy_station
+        FOREIGN KEY (station_id) REFERENCES sa_station(id)
+);
+
+CREATE TABLE sa_inverter_alarm (
+    id VARCHAR(64) PRIMARY KEY,
+    inverter_id VARCHAR(32) NOT NULL,
+    event_time TIMESTAMP NOT NULL,
+    type VARCHAR(64) NOT NULL,
+    level VARCHAR(32) NOT NULL,
+    description VARCHAR(255) NOT NULL,
+    status VARCHAR(32) NOT NULL,
+    CONSTRAINT fk_sa_inverter_alarm_inverter
+        FOREIGN KEY (inverter_id) REFERENCES sa_inverter(id)
 );
