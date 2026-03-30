@@ -1,183 +1,181 @@
-# Strategy 后端模块
+# Strategy Backend Module
 
-## 1. 模块定位
+## 1. 当前状态
 
-该模块对应后端“策略管理”能力，覆盖策略的全生命周期：
+截至 `2026-03-30`，`strategy` 已经不再是“只有 controller 壳 + mock 返回”的状态。
 
-- 元数据
-- 树结构
-- KPI
-- 列表
-- 详情
-- 创建
-- 提交 / 终止 / 删除
-- 单个模拟 / 批量模拟
-- 收益分析
-- 策略对比
+当前实现是：
 
-从接口数量和行为复杂度来看，它是当前后端最重的模块之一。
+- `H2` 保存策略元数据、执行日志、电价时段、收益日表和最近一次模拟快照
+- 后端 service 基于系统内已有事实数据实时计算模拟收益、区间和收益汇总
+- 前端开发环境已经可以直接联调 `/api/pvms/strategy/*`
+
+这意味着 `strategy` 模块现在和 `dashboard / production-monitor / station-archive / forecast` 一样，进入了“开发态真实联调”的阶段。
 
 ## 2. 核心代码位置
 
 | 路径 | 作用 |
 | --- | --- |
-| `backend/src/main/java/cn/techstar/pvms/backend/module/strategy/controller/StrategyController.java` | HTTP 接口入口 |
-| `backend/src/main/java/cn/techstar/pvms/backend/module/strategy/service/StrategyMockService.java` | 策略 mock 逻辑、状态流转、收益模拟 |
-| `backend/src/test/java/cn/techstar/pvms/backend/module/strategy/controller/StrategyControllerTest.java` | 接口测试 |
+| `backend/src/main/java/cn/techstar/pvms/backend/module/strategy/controller/StrategyController.java` | `strategy` HTTP 入口 |
+| `backend/src/main/java/cn/techstar/pvms/backend/module/strategy/service/StrategyDataService.java` | 元数据、树、列表、详情、状态流转、创建 |
+| `backend/src/main/java/cn/techstar/pvms/backend/module/strategy/service/StrategySimulationService.java` | 单策略/批量模拟，基于系统事实数据实时计算 |
+| `backend/src/main/java/cn/techstar/pvms/backend/module/strategy/service/StrategyRevenueService.java` | 收益 summary/detail/compare 汇总 |
+| `backend/src/main/java/cn/techstar/pvms/backend/module/strategy/repository/StrategyMetaRepository.java` | 公司、电站元数据读取 |
+| `backend/src/main/java/cn/techstar/pvms/backend/module/strategy/repository/StrategyTreeRepository.java` | 树结构统计读取 |
+| `backend/src/main/java/cn/techstar/pvms/backend/module/strategy/repository/StrategyRecordRepository.java` | 策略主表、period、log、snapshot 的读写 |
+| `backend/src/main/java/cn/techstar/pvms/backend/module/strategy/repository/StrategyPriceRepository.java` | 电价时段读取 |
+| `backend/src/main/java/cn/techstar/pvms/backend/module/strategy/repository/StrategyRevenueRepository.java` | 收益日表读取与写入 |
+| `backend/src/main/java/cn/techstar/pvms/backend/module/strategy/model/` | 创建/批量/ID 请求体 |
+| `backend/src/test/java/cn/techstar/pvms/backend/module/strategy/controller/StrategyControllerTest.java` | 模块契约测试 |
 
-## 3. 查询接口
+## 3. 数据边界
 
-| 路由 | 说明 | 参数 |
-| --- | --- | --- |
-| `GET /api/pvms/strategy/meta` | 元数据 | 无 |
-| `GET /api/pvms/strategy/tree` | 公司/电站树 | 无 |
-| `GET /api/pvms/strategy/kpi` | KPI | 无 |
-| `GET /api/pvms/strategy/list` | 策略列表 | `status?`、`type?`、`stationId?` |
-| `GET /api/pvms/strategy/detail` | 策略详情 | `id` |
-| `GET /api/pvms/strategy/electricity-price` | 分时电价 | `stationId?`、`date?` |
-| `GET /api/pvms/strategy/revenue/summary` | 收益总览 | 无 |
-| `GET /api/pvms/strategy/revenue/detail` | 收益明细 | 无 |
-| `GET /api/pvms/strategy/compare` | 策略对比 | `ids` |
+### 3.1 H2 中哪些是策略元数据
 
-## 4. 写接口
+策略模块自己的元数据表全部以 `sg_` 开头：
+
+- `sg_strategy`
+- `sg_strategy_period`
+- `sg_execution_log`
+- `sg_price_period`
+- `sg_revenue_daily`
+- `sg_strategy_snapshot`
+
+这些表的职责分别是：
+
+- `sg_strategy`：策略主数据，包含站点、类型、状态、目标功率、执行时间窗
+- `sg_strategy_period`：分时段动作计划
+- `sg_execution_log`：创建、提交、终止、执行类事件
+- `sg_price_period`：开发态分时电价模板
+- `sg_revenue_daily`：开发态收益日汇总
+- `sg_strategy_snapshot`：最近一次模拟快照
+
+### 3.2 哪些数据来自系统内其他模块
+
+`strategy` 不是凭空计算收益，而是复用系统里已经存在的事实数据：
+
+- `sa_company`
+- `sa_station`
+- `sa_station_curve_15m`
+- `fc_prediction_series_15m`
+
+当前用法是：
+
+- 站点、公司归属和装机来自 `sa_*`
+- 站点 15 分钟负荷和实际出力来自 `sa_station_curve_15m`
+- 日前预测值与上下界来自 `fc_prediction_series_15m`
+
+### 3.3 哪些结果是后端实时计算
+
+下面这些不是前端硬编码，也不是直接存表返回，而是 service 计算得到：
+
+- `GET /tree` 的公司/站点统计
+- `GET /kpi` 的执行数、待执行数、成功率、当日收益
+- `GET /list` 的状态标签、收益快照、置信区间
+- `POST /simulate` 的 `estimatedRevenue`
+- `POST /simulate` 的 `confidenceRange`
+- `POST /simulate` 的 `breakdown`
+- `POST /batch-simulate` 的 `results` 与 `totalRevenue`
+- `GET /revenue/summary` 的 KPI、趋势和类型拆分
+- `GET /compare` 的累计收益差值
+
+## 4. 接口清单
+
+### 4.1 读取接口
+
+| 路由 | 说明 |
+| --- | --- |
+| `GET /api/pvms/strategy/meta` | 返回公司、电站、类型、状态、电价模板 |
+| `GET /api/pvms/strategy/tree` | 返回公司/电站树，字段名是 `tree` |
+| `GET /api/pvms/strategy/kpi` | 返回策略 KPI |
+| `GET /api/pvms/strategy/list` | 返回策略列表 |
+| `GET /api/pvms/strategy/detail?id=SG-001` | 返回单策略详情 |
+| `GET /api/pvms/strategy/electricity-price?stationId=SZ-001` | 返回指定站点电价时段 |
+| `GET /api/pvms/strategy/revenue/summary` | 返回收益 KPI、趋势、类型拆分 |
+| `GET /api/pvms/strategy/revenue/detail` | 返回收益明细列表 |
+| `GET /api/pvms/strategy/compare?ids=SG-001,SG-002` | 返回策略对比结果 |
+
+### 4.2 写入和状态流转接口
 
 | 路由 | 说明 | 请求体 / 参数 |
 | --- | --- | --- |
-| `POST /api/pvms/strategy/create` | 创建单个策略 | `Map<String, Object>` |
-| `POST /api/pvms/strategy/batch-create` | 批量创建策略 | 当前后端读取 `{ items: [...] }` |
-| `POST /api/pvms/strategy/submit` | 提交策略 | `id` query param |
-| `POST /api/pvms/strategy/terminate` | 终止策略 | `id` query param |
-| `POST /api/pvms/strategy/batch-submit` | 批量提交 | `{ ids: [...] }` |
-| `POST /api/pvms/strategy/batch-delete` | 批量删除 | `{ ids: [...] }` |
-| `POST /api/pvms/strategy/simulate` | 单策略模拟 | `Map<String, Object>` |
-| `POST /api/pvms/strategy/batch-simulate` | 批量模拟 | 当前后端读取 `{ items: [...] }` |
+| `POST /api/pvms/strategy/create` | 创建单策略 | `StrategyRequest` |
+| `POST /api/pvms/strategy/batch-create` | 批量创建 | `{ "strategies": [...] }` |
+| `POST /api/pvms/strategy/submit?id=...` | 提交策略 | query param |
+| `POST /api/pvms/strategy/terminate?id=...` | 终止策略 | query param |
+| `POST /api/pvms/strategy/batch-submit` | 批量提交 | `{ "ids": [...] }` |
+| `POST /api/pvms/strategy/batch-delete` | 批量删除 | `{ "ids": [...] }` |
 
-## 5. 当前真实返回结构
+### 4.3 模拟接口
 
-### `GET /meta`
+| 路由 | 说明 | 关键响应字段 |
+| --- | --- | --- |
+| `POST /api/pvms/strategy/simulate` | 单策略模拟 | `estimatedRevenue`、`confidenceRange`、`breakdown` |
+| `POST /api/pvms/strategy/batch-simulate` | 批量模拟 | `results`、`totalRevenue` |
 
-当前返回：
+## 5. 关键实现说明
 
-- `types`
-- `statuses`
-- `stations`
-- `companies`
-- `pricePeriods`
+### 5.1 StrategyDataService
 
-### `GET /tree`
+这个类负责“策略元数据和状态流转”：
 
-当前返回：
+- `getMeta`
+- `getTree`
+- `getKpi`
+- `getList`
+- `getDetail`
+- `getElectricityPrice`
+- `createStrategy`
+- `batchCreateStrategies`
+- `submitStrategy`
+- `terminateStrategy`
+- `batchSubmit`
+- `batchDelete`
 
-- `items`
+这里还负责：
 
-树节点当前主要字段：
+- 生成新策略 ID
+- 将单策略请求拆成一段或两段 period
+- 创建后写入 snapshot 和收益日表
 
-- `id`
-- `name`
-- `type`
-- `children`
+### 5.2 StrategySimulationService
 
-### `GET /kpi`
+这个类是 `strategy` 的核心计算层。
 
-当前返回：
+它的输入不是纯 mock，而是：
 
-- `activeCount`
-- `todayRevenue`
-- `successRate`
-- `pendingCount`
+- 电站负荷
+- 电站实际光伏出力
+- 日前预测出力
+- 预测上下界
+- 分时电价
+- 用户录入的目标功率和时间窗
 
-### `GET /list`
+当前收益由 3 部分组成：
 
-当前返回：
+- `peakSaving`
+- `responseReward`
+- `penalty`
 
-- `items`
-
-### `GET /detail`
-
-当前返回会在基础策略字段之上补充：
-
-- `periods`
-- `powerUpperLimitKw`
-- `powerLowerLimitKw`
-- `actualRevenue`
-- `pricePeriods`
-- `remark`
-- `version`
-
-### `POST /simulate`
-
-当前返回：
+最终返回：
 
 - `estimatedRevenue`
-- `confidence`
-- `revenueRange`
-- `breakdown`
+- `confidenceRange.low`
+- `confidenceRange.high`
+- `successProbability`
+- `timeline`
 
-### `POST /batch-simulate`
+### 5.3 StrategyRevenueService
 
-当前返回：
+这个类负责把 `sg_revenue_daily` 做成前端可直接消费的形态：
 
-- `totalEstimatedRevenue`
-- `items`
+- `summary`：KPI、趋势、类型拆分
+- `detail`：按策略/日期展开的收益明细
+- `compare`：两条策略累计收益对比
 
-### 收益接口
+## 6. 当前状态机
 
-`/revenue/summary` 当前返回：
-
-- `kpi`
-- `trend`
-- `typeBreakdown`
-
-`/revenue/detail` 当前返回：
-
-- `items`
-
-## 6. 当前数据和状态的真实情况
-
-这个模块不是纯静态接口，它已经具备一定“内存态业务逻辑”：
-
-- 初始化 25 条策略
-- 支持创建、提交、终止、批量提交、批量删除
-- 支持单个和批量收益模拟
-- 按状态计算 KPI
-- 按策略类型汇总收益
-
-但要注意：
-
-- 这些状态都保存在进程内
-- 服务重启后会恢复初始数据
-- 不具备持久化能力
-
-## 7. 当前已知前后端契约问题
-
-这是另一个高风险模块。
-
-### 前端当前期望
-
-前端页面当前更偏向使用：
-
-- 树结构字段 `tree`
-- 批量模拟返回 `results`、`totalRevenue`
-- 单模拟返回 `confidenceRange`
-- 批量创建请求体 `strategies`
-
-### 后端当前实际
-
-后端当前使用的是：
-
-- 树结构字段 `items`
-- 批量模拟返回 `items`、`totalEstimatedRevenue`
-- 单模拟返回 `confidence`、`revenueRange`
-- 批量创建请求体 `items`
-
-结论：
-
-- list 页部分链路问题较小
-- config 页和 batch 相关链路是真实联调的高风险点
-
-## 8. 业务语义补充
-
-### 策略状态
+当前策略状态值：
 
 - `draft`
 - `pending`
@@ -185,71 +183,54 @@
 - `completed`
 - `terminated`
 
-### 策略类型
+当前代码里真正实现的状态流转动作：
 
-- `demand-response`
-- `frequency-regulation`
-- `grid-constraint`
-- `peak-shaving`
+- `create` -> `draft`
+- `submit` -> `pending`
+- `terminate` -> `terminated`
 
-### 分时电价
+`executing` 和 `completed` 当前主要由种子数据体现，用来支撑列表、KPI 和收益分析页面展示。
 
-当前内置 9 个时段，用于：
+## 7. 验证方式
 
-- 展示电价曲线
-- 生成策略说明
-- 估算收益
+### 7.1 测试命令
 
-## 9. 测试覆盖
+```powershell
+cd backend
+mvn -Dtest=StrategyControllerTest test
+mvn test
+```
 
-测试文件：
+### 7.2 关键接口
 
-- `StrategyControllerTest.java`
+```text
+http://127.0.0.1:8091/api/pvms/strategy/meta
+http://127.0.0.1:8091/api/pvms/strategy/tree
+http://127.0.0.1:8091/api/pvms/strategy/list
+http://127.0.0.1:8091/api/pvms/strategy/electricity-price?stationId=SZ-001
+http://127.0.0.1:8091/api/pvms/strategy/revenue/summary
+```
 
-当前覆盖较完整，包含：
+## 8. 以后怎么替换成真实系统
 
-- meta
-- tree
-- kpi
-- list
-- detail
-- electricity-price
-- create
-- batch-create
-- submit
-- terminate
-- batch-submit
-- batch-delete
-- simulate
-- batch-simulate
-- revenue summary
-- revenue detail
-- compare
+### 8.1 哪些可以直接替换数据源
 
-## 10. 维护建议
+- `sg_price_period` 可以替换成真实电价服务
+- `sg_revenue_daily` 可以替换成真实结算/收益系统
+- `sg_execution_log` 可以替换成真实执行审计日志
 
-### 如果只是补演示逻辑
+### 8.2 哪些后端计算逻辑建议保留
 
-可以继续在 `StrategyMockService` 中维护：
+即使未来接真实系统，下面这些逻辑仍然建议保留在后端，而不是回到前端：
 
-- 初始策略池
-- 状态流转
-- 收益估算规则
-- 电价时段
+- 树结构统计
+- KPI 汇总
+- 收益 summary/detail/compare 装配
+- 模拟区间和 breakdown 的统一口径
 
-### 如果目标是打通前后端联调
+### 8.3 替换顺序建议
 
-建议优先做：
-
-1. 统一树接口字段
-2. 统一 batch create / batch simulate 请求体和响应体
-3. 统一 simulate 的收益结构表达
-
-### 如果目标是走向真实业务后端
-
-建议路线：
-
-1. 先拆 DTO
-2. 再拆 Service 和 Repository
-3. 最后接真实电价、策略执行和收益数据源
-
+1. 保持现有 controller 契约不变
+2. 先替换 repository 数据源
+3. 再校准 simulation/revenue 的系数和公式
+4. 最后再补权限、审计和异步任务链
