@@ -577,3 +577,294 @@ SELECT
         ELSE 'available'
     END
 FROM sa_station s;
+
+INSERT INTO sg_strategy (
+    id, station_id, company_id, name, type, status, mode, target_power_kw,
+    start_time, end_time, version_no, remark, created_at, updated_at
+) VALUES
+('SG-001', 'SZ-001', 'com-001', '深圳湾削峰策略 A', 'peak-shaving', 'executing', 'single', 1200, TIMESTAMP '2026-03-30 08:00:00', TIMESTAMP '2026-03-30 18:00:00', 3, '园区工作日削峰', TIMESTAMP '2026-03-26 09:00:00', TIMESTAMP '2026-03-30 08:10:00'),
+('SG-002', 'SZ-002', 'com-001', '南山需求响应策略 A', 'demand-response', 'pending', 'single', 950, TIMESTAMP '2026-03-30 09:00:00', TIMESTAMP '2026-03-30 17:00:00', 2, '待市场指令下发', TIMESTAMP '2026-03-26 10:00:00', TIMESTAMP '2026-03-30 07:40:00'),
+('SG-003', 'SZ-003', 'com-001', '前海电网约束策略 A', 'grid-constraint', 'draft', 'single', 780, TIMESTAMP '2026-03-30 10:00:00', TIMESTAMP '2026-03-30 16:00:00', 1, '草稿待校核', TIMESTAMP '2026-03-27 11:00:00', TIMESTAMP '2026-03-29 16:30:00'),
+('SG-004', 'SZ-004', 'com-001', '生态园调频策略 A', 'frequency-regulation', 'completed', 'single', 680, TIMESTAMP '2026-03-29 08:00:00', TIMESTAMP '2026-03-29 15:00:00', 2, '已完成归档', TIMESTAMP '2026-03-24 10:00:00', TIMESTAMP '2026-03-29 15:30:00'),
+('SG-005', 'DG-001', 'com-001', '松山湖削峰策略 A', 'peak-shaving', 'executing', 'single', 1450, TIMESTAMP '2026-03-30 08:30:00', TIMESTAMP '2026-03-30 18:30:00', 4, '制造园削峰执行中', TIMESTAMP '2026-03-25 09:30:00', TIMESTAMP '2026-03-30 08:35:00'),
+('SG-006', 'DG-002', 'com-001', '松山湖需求响应策略 A', 'demand-response', 'terminated', 'single', 1080, TIMESTAMP '2026-03-29 09:00:00', TIMESTAMP '2026-03-29 17:00:00', 2, '因设备告警终止', TIMESTAMP '2026-03-25 12:00:00', TIMESTAMP '2026-03-29 11:40:00'),
+('SG-007', 'WH-001', 'com-002', '武汉物流园约束策略 A', 'grid-constraint', 'executing', 'single', 920, TIMESTAMP '2026-03-30 07:30:00', TIMESTAMP '2026-03-30 16:30:00', 3, '物流园电网约束', TIMESTAMP '2026-03-26 08:40:00', TIMESTAMP '2026-03-30 07:35:00'),
+('SG-008', 'WH-002', 'com-002', '武汉仓储园调频策略 A', 'frequency-regulation', 'pending', 'batch', 860, TIMESTAMP '2026-03-30 08:00:00', TIMESTAMP '2026-03-30 14:00:00', 1, '待批量提交流程', TIMESTAMP '2026-03-27 09:20:00', TIMESTAMP '2026-03-30 07:00:00'),
+('SG-009', 'WH-003', 'com-002', '鄂州协同园削峰策略 A', 'peak-shaving', 'draft', 'single', 720, TIMESTAMP '2026-03-30 11:00:00', TIMESTAMP '2026-03-30 19:00:00', 1, '新建待模拟', TIMESTAMP '2026-03-28 13:00:00', TIMESTAMP '2026-03-30 06:20:00'),
+('SG-010', 'HF-001', 'com-003', '合肥研发中心需求响应策略 A', 'demand-response', 'completed', 'single', 660, TIMESTAMP '2026-03-28 09:00:00', TIMESTAMP '2026-03-28 17:00:00', 3, '历史完成策略', TIMESTAMP '2026-03-23 09:00:00', TIMESTAMP '2026-03-28 18:10:00'),
+('SG-011', 'HF-002', 'com-003', '合肥实证基地约束策略 A', 'grid-constraint', 'executing', 'single', 610, TIMESTAMP '2026-03-30 08:00:00', TIMESTAMP '2026-03-30 17:00:00', 2, '实证基地出力约束', TIMESTAMP '2026-03-26 10:30:00', TIMESTAMP '2026-03-30 08:00:00'),
+('SG-012', 'TJ-001', 'com-004', '天津港储能园调频策略 A', 'frequency-regulation', 'terminated', 'single', 880, TIMESTAMP '2026-03-29 10:00:00', TIMESTAMP '2026-03-29 18:00:00', 2, '站点离线终止', TIMESTAMP '2026-03-26 11:00:00', TIMESTAMP '2026-03-29 10:45:00'),
+('SG-013', 'TJ-002', 'com-004', '天津港仓储园削峰策略 A', 'peak-shaving', 'pending', 'batch', 760, TIMESTAMP '2026-03-30 09:00:00', TIMESTAMP '2026-03-30 17:00:00', 1, '待确认站点恢复', TIMESTAMP '2026-03-28 10:00:00', TIMESTAMP '2026-03-30 07:10:00'),
+('SG-014', 'CD-001', 'com-005', '成都西部基地需求响应策略 A', 'demand-response', 'executing', 'single', 1320, TIMESTAMP '2026-03-30 08:00:00', TIMESTAMP '2026-03-30 18:00:00', 3, '西部基地主策略', TIMESTAMP '2026-03-25 08:30:00', TIMESTAMP '2026-03-30 08:05:00'),
+('SG-015', 'CD-002', 'com-005', '成都连廊产区约束策略 A', 'grid-constraint', 'draft', 'single', 1020, TIMESTAMP '2026-03-30 10:00:00', TIMESTAMP '2026-03-30 20:00:00', 1, '待确认约束边界', TIMESTAMP '2026-03-28 15:00:00', TIMESTAMP '2026-03-30 05:50:00'),
+('SG-016', 'CD-003', 'com-005', '成都仓储园调频策略 A', 'frequency-regulation', 'completed', 'single', 960, TIMESTAMP '2026-03-29 09:00:00', TIMESTAMP '2026-03-29 16:30:00', 2, '已完成结算', TIMESTAMP '2026-03-24 14:00:00', TIMESTAMP '2026-03-29 17:10:00'),
+('SG-017', 'SZ-001', 'com-001', '深圳湾需求响应策略 B', 'demand-response', 'executing', 'batch', 980, TIMESTAMP '2026-03-30 07:00:00', TIMESTAMP '2026-03-30 12:00:00', 2, '上午快速响应', TIMESTAMP '2026-03-27 08:00:00', TIMESTAMP '2026-03-30 07:05:00'),
+('SG-018', 'DG-001', 'com-001', '松山湖电网约束策略 B', 'grid-constraint', 'pending', 'single', 1180, TIMESTAMP '2026-03-30 11:00:00', TIMESTAMP '2026-03-30 18:00:00', 1, '待确认园区负荷', TIMESTAMP '2026-03-29 09:10:00', TIMESTAMP '2026-03-30 07:20:00'),
+('SG-019', 'WH-002', 'com-002', '武汉仓储园削峰策略 B', 'peak-shaving', 'draft', 'single', 790, TIMESTAMP '2026-03-30 12:00:00', TIMESTAMP '2026-03-30 19:00:00', 1, '待二次模拟', TIMESTAMP '2026-03-29 11:00:00', TIMESTAMP '2026-03-30 06:30:00'),
+('SG-020', 'HF-002', 'com-003', '合肥实证基地调频策略 B', 'frequency-regulation', 'executing', 'batch', 560, TIMESTAMP '2026-03-30 08:30:00', TIMESTAMP '2026-03-30 15:30:00', 2, '实证基地调频执行中', TIMESTAMP '2026-03-26 16:00:00', TIMESTAMP '2026-03-30 08:32:00'),
+('SG-021', 'CD-001', 'com-005', '成都西部基地削峰策略 B', 'peak-shaving', 'terminated', 'single', 1260, TIMESTAMP '2026-03-29 08:30:00', TIMESTAMP '2026-03-29 18:30:00', 2, '人工终止', TIMESTAMP '2026-03-27 09:40:00', TIMESTAMP '2026-03-29 13:20:00'),
+('SG-022', 'SZ-004', 'com-001', '生态园电网约束策略 B', 'grid-constraint', 'completed', 'single', 640, TIMESTAMP '2026-03-28 09:00:00', TIMESTAMP '2026-03-28 17:00:00', 2, '已执行完成', TIMESTAMP '2026-03-24 09:20:00', TIMESTAMP '2026-03-28 17:05:00'),
+('SG-023', 'DG-002', 'com-001', '松山湖制造园调频策略 B', 'frequency-regulation', 'pending', 'batch', 980, TIMESTAMP '2026-03-30 13:00:00', TIMESTAMP '2026-03-30 20:00:00', 1, '待告警恢复后执行', TIMESTAMP '2026-03-29 15:00:00', TIMESTAMP '2026-03-30 07:50:00'),
+('SG-024', 'CD-003', 'com-005', '成都仓储园需求响应策略 B', 'demand-response', 'executing', 'single', 920, TIMESTAMP '2026-03-30 09:00:00', TIMESTAMP '2026-03-30 17:30:00', 2, '仓储园快速响应', TIMESTAMP '2026-03-27 10:30:00', TIMESTAMP '2026-03-30 09:02:00');
+
+INSERT INTO sg_strategy_period (
+    strategy_id, period_order, start_slot, end_slot, action_type, target_ratio
+)
+SELECT
+    id,
+    1,
+    CASE
+        WHEN type IN ('peak-shaving', 'frequency-regulation') THEN 32
+        ELSE 28
+    END,
+    CASE
+        WHEN type IN ('peak-shaving', 'frequency-regulation') THEN 43
+        ELSE 39
+    END,
+    CASE
+        WHEN type = 'peak-shaving' THEN 'peak-cut'
+        WHEN type = 'demand-response' THEN 'response-up'
+        WHEN type = 'grid-constraint' THEN 'limit-output'
+        ELSE 'regulate-up'
+    END,
+    CASE
+        WHEN type IN ('peak-shaving', 'demand-response') THEN 0.72
+        WHEN type = 'grid-constraint' THEN 0.66
+        ELSE 0.58
+    END
+FROM sg_strategy;
+
+INSERT INTO sg_strategy_period (
+    strategy_id, period_order, start_slot, end_slot, action_type, target_ratio
+)
+SELECT
+    id,
+    2,
+    CASE
+        WHEN type IN ('peak-shaving', 'frequency-regulation') THEN 52
+        ELSE 56
+    END,
+    CASE
+        WHEN type IN ('peak-shaving', 'frequency-regulation') THEN 67
+        ELSE 71
+    END,
+    CASE
+        WHEN type = 'peak-shaving' THEN 'peak-hold'
+        WHEN type = 'demand-response' THEN 'response-hold'
+        WHEN type = 'grid-constraint' THEN 'limit-hold'
+        ELSE 'regulate-down'
+    END,
+    CASE
+        WHEN type IN ('peak-shaving', 'demand-response') THEN 0.54
+        WHEN type = 'grid-constraint' THEN 0.48
+        ELSE 0.44
+    END
+FROM sg_strategy;
+
+INSERT INTO sg_execution_log (
+    id, strategy_id, event_time, action, result, deviation_rate_pct, operator_name
+)
+SELECT
+    CONCAT(id, '-LOG-01'),
+    id,
+    DATEADD('HOUR', 1, created_at),
+    'created',
+    'success',
+    ROUND(ABS(MOD(target_power_kw, 90)) / 10.0, 1),
+    'system-seed'
+FROM sg_strategy;
+
+INSERT INTO sg_execution_log (
+    id, strategy_id, event_time, action, result, deviation_rate_pct, operator_name
+)
+SELECT
+    CONCAT(id, '-LOG-02'),
+    id,
+    DATEADD('HOUR', 2, created_at),
+    CASE
+        WHEN status IN ('pending', 'executing', 'completed') THEN 'submitted'
+        WHEN status = 'terminated' THEN 'terminated'
+        ELSE 'simulated'
+    END,
+    CASE
+        WHEN status = 'terminated' THEN 'warning'
+        ELSE 'success'
+    END,
+    ROUND(ABS(MOD(target_power_kw, 130)) / 12.0, 1),
+    'dispatcher'
+FROM sg_strategy;
+
+INSERT INTO sg_execution_log (
+    id, strategy_id, event_time, action, result, deviation_rate_pct, operator_name
+)
+SELECT
+    CONCAT(id, '-LOG-03'),
+    id,
+    updated_at,
+    CASE
+        WHEN status = 'executing' THEN 'executing'
+        WHEN status = 'completed' THEN 'completed'
+        WHEN status = 'terminated' THEN 'terminated'
+        WHEN status = 'pending' THEN 'queued'
+        ELSE 'draft-saved'
+    END,
+    CASE
+        WHEN status = 'terminated' THEN 'warning'
+        ELSE 'success'
+    END,
+    ROUND(ABS(MOD(target_power_kw, 170)) / 13.0, 1),
+    'operator-01'
+FROM sg_strategy;
+
+INSERT INTO sg_price_period (
+    station_id, period_order, start_slot, end_slot, price_type, price_cny_per_kwh
+)
+SELECT id, 1, 0, 23, 'valley', 0.25 FROM sa_station;
+INSERT INTO sg_price_period (
+    station_id, period_order, start_slot, end_slot, price_type, price_cny_per_kwh
+)
+SELECT id, 2, 24, 31, 'flat', 0.65 FROM sa_station;
+INSERT INTO sg_price_period (
+    station_id, period_order, start_slot, end_slot, price_type, price_cny_per_kwh
+)
+SELECT id, 3, 32, 43, 'peak', 1.11 FROM sa_station;
+INSERT INTO sg_price_period (
+    station_id, period_order, start_slot, end_slot, price_type, price_cny_per_kwh
+)
+SELECT id, 4, 44, 51, 'flat', 0.65 FROM sa_station;
+INSERT INTO sg_price_period (
+    station_id, period_order, start_slot, end_slot, price_type, price_cny_per_kwh
+)
+SELECT id, 5, 52, 59, 'peak', 1.11 FROM sa_station;
+INSERT INTO sg_price_period (
+    station_id, period_order, start_slot, end_slot, price_type, price_cny_per_kwh
+)
+SELECT id, 6, 60, 67, 'flat', 0.65 FROM sa_station;
+INSERT INTO sg_price_period (
+    station_id, period_order, start_slot, end_slot, price_type, price_cny_per_kwh
+)
+SELECT id, 7, 68, 75, 'peak', 1.11 FROM sa_station;
+INSERT INTO sg_price_period (
+    station_id, period_order, start_slot, end_slot, price_type, price_cny_per_kwh
+)
+SELECT id, 8, 76, 87, 'flat', 0.65 FROM sa_station;
+INSERT INTO sg_price_period (
+    station_id, period_order, start_slot, end_slot, price_type, price_cny_per_kwh
+)
+SELECT id, 9, 88, 95, 'valley', 0.25 FROM sa_station;
+
+INSERT INTO sg_revenue_daily (
+    strategy_id, biz_date, estimated_revenue_cny, actual_revenue_cny,
+    peak_saving_cny, response_reward_cny, penalty_cny
+)
+SELECT
+    s.id,
+    CAST(DATEADD('DAY', -day_range.X, DATE '2026-03-30') AS DATE),
+    ROUND(
+        180
+        + MOD(CAST(SUBSTRING(s.id, 4, 3) AS INT), 7) * 36
+        + CASE s.type
+            WHEN 'peak-shaving' THEN 96
+            WHEN 'demand-response' THEN 78
+            WHEN 'grid-constraint' THEN 58
+            ELSE 66
+          END
+        - day_range.X * 3.2,
+        2
+    ),
+    ROUND(
+        170
+        + MOD(CAST(SUBSTRING(s.id, 4, 3) AS INT), 7) * 34
+        + CASE s.type
+            WHEN 'peak-shaving' THEN 88
+            WHEN 'demand-response' THEN 72
+            WHEN 'grid-constraint' THEN 52
+            ELSE 61
+          END
+        - day_range.X * 3.4,
+        2
+    ),
+    ROUND(
+        60
+        + CASE s.type
+            WHEN 'peak-shaving' THEN 70
+            WHEN 'demand-response' THEN 24
+            WHEN 'grid-constraint' THEN 18
+            ELSE 30
+          END
+        + MOD(CAST(SUBSTRING(s.id, 4, 3) AS INT), 5) * 8
+        - day_range.X * 1.4,
+        2
+    ),
+    ROUND(
+        20
+        + CASE s.type
+            WHEN 'demand-response' THEN 88
+            WHEN 'frequency-regulation' THEN 64
+            ELSE 22
+          END
+        + MOD(CAST(SUBSTRING(s.id, 4, 3) AS INT), 4) * 6
+        - day_range.X * 0.9,
+        2
+    ),
+    ROUND(
+        CASE
+            WHEN s.status = 'terminated' THEN 28 + day_range.X * 0.6
+            WHEN s.status = 'draft' THEN 6 + day_range.X * 0.2
+            ELSE 10 + day_range.X * 0.3
+        END,
+        2
+    )
+FROM sg_strategy s
+CROSS JOIN SYSTEM_RANGE(0, 13) AS day_range;
+
+INSERT INTO sg_strategy_snapshot (
+    strategy_id, last_simulated_revenue_cny, confidence_low_cny,
+    confidence_high_cny, success_probability_pct
+)
+SELECT
+    s.id,
+    ROUND(
+        220
+        + MOD(CAST(SUBSTRING(s.id, 4, 3) AS INT), 8) * 40
+        + CASE s.type
+            WHEN 'peak-shaving' THEN 120
+            WHEN 'demand-response' THEN 90
+            WHEN 'grid-constraint' THEN 70
+            ELSE 82
+          END,
+        2
+    ),
+    ROUND(
+        180
+        + MOD(CAST(SUBSTRING(s.id, 4, 3) AS INT), 8) * 34
+        + CASE s.type
+            WHEN 'peak-shaving' THEN 96
+            WHEN 'demand-response' THEN 72
+            WHEN 'grid-constraint' THEN 56
+            ELSE 64
+          END,
+        2
+    ),
+    ROUND(
+        260
+        + MOD(CAST(SUBSTRING(s.id, 4, 3) AS INT), 8) * 48
+        + CASE s.type
+            WHEN 'peak-shaving' THEN 136
+            WHEN 'demand-response' THEN 106
+            WHEN 'grid-constraint' THEN 82
+            ELSE 94
+          END,
+        2
+    ),
+    ROUND(
+        CASE s.status
+            WHEN 'executing' THEN 93.0
+            WHEN 'completed' THEN 95.0
+            WHEN 'pending' THEN 88.0
+            WHEN 'terminated' THEN 72.0
+            ELSE 84.0
+        END - MOD(CAST(SUBSTRING(s.id, 4, 3) AS INT), 4) * 1.5,
+        1
+    )
+FROM sg_strategy s;
