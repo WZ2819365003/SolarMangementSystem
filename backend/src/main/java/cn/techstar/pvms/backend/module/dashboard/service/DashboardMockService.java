@@ -207,6 +207,57 @@ public class DashboardMockService {
         );
     }
 
+    public Map<String, Object> getOverview() {
+        double totalCapacityMw = round(sum(STATIONS, StationRecord::capacityKwp) / 1000, 1);
+        double realtimePowerMw = round(sum(STATIONS, StationRecord::realtimePowerKw) / 1000, 2);
+        double todayEnergyMwh = round(sum(STATIONS, StationRecord::todayEnergyKwh) / 1000, 1);
+        double averageAvailability = round(average(STATIONS, StationRecord::availability), 1);
+        long pendingAlarms = ALARMS.stream()
+            .filter(item -> !"已关闭".equals(item.status()))
+            .count();
+        long criticalAlarms = ALARMS.stream()
+            .filter(item -> Objects.equals(item.level(), "critical"))
+            .count();
+
+        return orderedMap(
+            "summaryCards", List.of(
+                overviewCard("generation", "今日发电量", todayEnergyMwh, "MWh", "同比昨日 +8.2%", "el-icon-lightning", "teal"),
+                overviewCard("capacity", "并网容量", totalCapacityMw, "MW", "覆盖 6 座站点", "el-icon-office-building", "blue"),
+                overviewCard("realtime", "实时功率", realtimePowerMw, "MW", "按站点实时功率汇总", "el-icon-data-line", "emerald"),
+                overviewCard("onlineRate", "设备在线率", averageAvailability, "%", "站点可用率均值", "el-icon-cpu", "teal"),
+                overviewCard("alarm", "待处理告警", pendingAlarms, "条", "严重告警 " + criticalAlarms + " 条", "el-icon-warning-outline", "orange")
+            ),
+            "trends", orderedMap(
+                "dates", List.of("03-16", "03-17", "03-18", "03-19", "03-20", "03-21", "03-22"),
+                "generationMwh", List.of(96.0, 108.0, 118.0, 123.0, 126.0, 121.0, todayEnergyMwh),
+                "incomeWan", List.of(5.8, 6.4, 6.9, 7.1, 7.3, 7.0, round(todayEnergyMwh * 0.067, 1))
+            ),
+            "focusAlarms", ALARMS.stream()
+                .limit(3)
+                .map(item -> orderedMap(
+                    "id", item.id(),
+                    "title", item.description(),
+                    "level", item.levelLabel(),
+                    "station", item.stationName(),
+                    "status", item.status()
+                ))
+                .toList(),
+            "stationRows", STATIONS.stream()
+                .map(item -> orderedMap(
+                    "stationId", item.id(),
+                    "stationName", item.name(),
+                    "region", item.region(),
+                    "capacity", round(item.capacityKwp() / 1000, 1) + "MW",
+                    "gridStatus", "offline".equals(item.status()) ? "离线" : "已并网",
+                    "healthGrade", item.healthGrade(),
+                    "owner", item.region() + "运维中心",
+                    "onlineRate", round(item.availability(), 1) + "%",
+                    "revenueRate", round(item.pr(), 1) + "%"
+                ))
+                .toList()
+        );
+    }
+
     public Map<String, Object> getRecentAlarms(String level, String stationId) {
         List<AlarmRecord> items = ALARMS.stream()
             .filter(item -> level == null || level.isBlank() || Objects.equals(item.level(), level))
@@ -405,6 +456,26 @@ public class DashboardMockService {
             "helper", helper,
             "changeRate", changeRate,
             "changeLabel", changeLabel
+        );
+    }
+
+    private Map<String, Object> overviewCard(
+        String key,
+        String title,
+        Object value,
+        String unit,
+        String helper,
+        String icon,
+        String accent
+    ) {
+        return orderedMap(
+            "key", key,
+            "title", title,
+            "value", value,
+            "unit", unit,
+            "helper", helper,
+            "icon", icon,
+            "accent", accent
         );
     }
 
