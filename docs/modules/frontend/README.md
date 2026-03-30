@@ -33,4 +33,4 @@
 - 前端接口总入口在 `frontend/src/api/pvms.js`
 - 开发态请求行为取决于 `frontend/src/shared/host/bridge.js`
 - `production-monitor` 会复用 `stations` 组件和 `stationarchive` 后端接口，维护时不要孤立看待
-
+- `production-monitor.md` 已补充当前 H2 后端链路、`load` 页结构和 `station` 模式边界

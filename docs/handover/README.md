@@ -17,6 +17,7 @@
 7. `07_Mock现状_联调策略_发布差距.md`
 8. `08_测试_排障_交接清单.md`
 9. `09_地图静态底图与动态点位下沉方案.md`
+10. `10_M02_生产监控_H2数据与计算说明.md`
 
 ## 关键入口
 
@@ -31,12 +32,15 @@
 ## 当前专题
 
 - 地图静态底图 / 动态点位边界：`09_地图静态底图与动态点位下沉方案.md`
+- M02 生产监控 H2 数据与计算：`10_M02_生产监控_H2数据与计算说明.md`
 - 对应设计 spec：`../superpowers/specs/2026-03-30-dashboard-map-static-dynamic-split-design.md`
 - 对应实施计划：`../superpowers/plans/2026-03-30-dashboard-map-static-dynamic-split.md`
+- M02 实施计划：`../superpowers/plans/2026-03-30-production-monitor-h2-migration.md`
 
 ## 当前代码状态提示
 
 - 前端开发环境已经默认走后端代理，不再默认走前端 mock。
 - dashboard 地图链路已经切到后端 H2 种子数据。
+- production-monitor 资源总览链路已经切到后端 H2 种子数据和后端计算。
 - 地图底图和 SDK 仍在前端。
 - 预测、策略等模块仍有前后端契约收敛工作未完成。

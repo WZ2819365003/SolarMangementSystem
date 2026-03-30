@@ -12,6 +12,7 @@
 6. `handover/05_后端维护手册.md`
 7. `handover/07_Mock现状_联调策略_发布差距.md`
 8. `handover/09_地图静态底图与动态点位下沉方案.md`
+9. `handover/10_M02_生产监控_H2数据与计算说明.md`
 
 ## 目录说明
 
@@ -39,10 +40,14 @@
 - 交接总入口：`docs/handover/README.md`
 - 最新审计报告：`docs/audits/2026-03-29_前后端代码审计报告.md`
 - 地图专题交接：`docs/handover/09_地图静态底图与动态点位下沉方案.md`
+- 生产监控专题交接：`docs/handover/10_M02_生产监控_H2数据与计算说明.md`
+- 生产监控专题实施计划：`docs/superpowers/plans/2026-03-30-production-monitor-h2-migration.md`
 - 地图专题设计：`docs/superpowers/specs/2026-03-30-dashboard-map-static-dynamic-split-design.md`
 - 地图专题实施计划：`docs/superpowers/plans/2026-03-30-dashboard-map-static-dynamic-split.md`
 - 前端 dashboard 模块：`docs/modules/frontend/dashboard.md`
 - 后端 dashboard 模块：`docs/modules/backend/dashboard.md`
+- 前端 production-monitor 模块：`docs/modules/frontend/production-monitor.md`
+- 后端 production-monitor 模块：`docs/modules/backend/production-monitor.md`
 
 ## 维护约定
 
