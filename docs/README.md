@@ -1,6 +1,6 @@
 # 文档导航
 
-项目文档统一维护在 `docs/` 下，按“交接优先、模块分层、专题单独展开”的方式组织。
+项目文档统一维护在 `docs/` 下，按“交接优先、模块分层、专题展开”的方式组织。
 
 ## 新人优先阅读
 
@@ -12,6 +12,7 @@
 6. `handover/05_后端维护手册.md`
 7. `handover/10_M02_生产监控_H2数据与计算说明.md`
 8. `handover/11_M02_电站监控_H2数据与计算说明.md`
+9. `handover/12_M03_预测分析_H2数据与计算说明.md`
 
 ## 目录说明
 
@@ -44,14 +45,17 @@
 - 地图专题  
   `handover/09_地图静态底图与动态点位下沉方案.md`
 
-- M02 资源总览专题  
+- M02 生产监控专题  
   `handover/10_M02_生产监控_H2数据与计算说明.md`
 
 - M02 电站监控专题  
   `handover/11_M02_电站监控_H2数据与计算说明.md`
 
-- 后端电站监控模块  
-  `modules/backend/station-archive.md`
+- M03 预测分析专题  
+  `handover/12_M03_预测分析_H2数据与计算说明.md`
 
-- 前端电站组件模块  
-  `modules/frontend/stations.md`
+- 后端预测分析模块  
+  `modules/backend/forecast.md`
+
+- 前端预测分析模块  
+  `modules/frontend/forecast.md`
