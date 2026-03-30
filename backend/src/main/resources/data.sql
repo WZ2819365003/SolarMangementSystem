@@ -414,3 +414,166 @@ INSERT INTO sa_inverter_alarm (id, inverter_id, event_time, type, level, descrip
 ('SA-ALM-004', 'WH-002-INV-01', TIMESTAMP '2026-03-30 11:56:00', '通信异常', '告警', '与采集器通信超时超过 30 秒', '已确认'),
 ('SA-ALM-005', 'TJ-001-INV-01', TIMESTAMP '2026-03-30 10:14:00', '离线告警', '故障', '园区通信链路中断，逆变器处于离线状态', '未处理'),
 ('SA-ALM-006', 'CD-003-INV-01', TIMESTAMP '2026-03-30 14:06:00', '绝缘阻抗低', '告警', '绝缘阻抗低于 500kΩ，建议安排现场排查', '待确认');
+INSERT INTO fc_model (id, name, type, version, provider, description, status) VALUES
+('FC-M-DA-001', 'Forecast Day-Ahead Seed Model', 'day-ahead', 'v1.3.0', 'PVMS Seed', 'Development day-ahead forecast metadata model', 'active'),
+('FC-M-US-001', 'Forecast Ultra-Short Seed Model', 'ultra-short', 'v2.1.0', 'PVMS Seed', 'Development ultra-short forecast metadata model', 'active');
+
+INSERT INTO fc_station_model_binding (station_id, day_ahead_model_id, ultra_short_model_id, confidence_level)
+SELECT
+    id,
+    'FC-M-DA-001',
+    'FC-M-US-001',
+    ROUND(88 + MOD(sort_index, 6) * 1.5, 1)
+FROM sa_station;
+
+INSERT INTO fc_prediction_series_15m (
+    station_id, biz_date, time_slot, forecast_type, predicted_power_kw, upper_bound_kw, lower_bound_kw, scenario_tag
+)
+SELECT
+    c.station_id,
+    c.biz_date,
+    c.time_slot,
+    'day-ahead',
+    ROUND(GREATEST(c.forecast_day_ahead_kw * (0.995 + SIN((c.time_slot + s.sort_index) / 11.0) * 0.012), 0), 1),
+    ROUND(GREATEST(c.forecast_day_ahead_kw * 1.10 + 18, 0), 1),
+    ROUND(GREATEST(c.forecast_day_ahead_kw * 0.90 - 16, 0), 1),
+    'baseline'
+FROM sa_station_curve_15m c
+JOIN sa_station s ON s.id = c.station_id
+WHERE c.biz_date = DATE '2026-03-30';
+
+INSERT INTO fc_prediction_series_15m (
+    station_id, biz_date, time_slot, forecast_type, predicted_power_kw, upper_bound_kw, lower_bound_kw, scenario_tag
+)
+SELECT
+    c.station_id,
+    c.biz_date,
+    c.time_slot,
+    'ultra-short',
+    ROUND(GREATEST(c.forecast_ultra_short_kw * (1.002 + COS((c.time_slot + s.sort_index) / 13.0) * 0.008), 0), 1),
+    ROUND(GREATEST(c.forecast_ultra_short_kw * 1.06 + 10, 0), 1),
+    ROUND(GREATEST(c.forecast_ultra_short_kw * 0.94 - 8, 0), 1),
+    'rolling'
+FROM sa_station_curve_15m c
+JOIN sa_station s ON s.id = c.station_id
+WHERE c.biz_date = DATE '2026-03-30';
+
+INSERT INTO fc_error_sample (
+    station_id, biz_date, hour_slot, forecast_type, error_kw, qualified
+)
+SELECT
+    s.id,
+    CAST(DATEADD('DAY', -day_range.X, DATE '2026-03-30') AS DATE),
+    hour_range.X,
+    'day-ahead',
+    ROUND(
+        SIN((s.sort_index * 5.0 + day_range.X * 2.0 + hour_range.X) / 4.5) * 118
+        + COS((hour_range.X + 1.0) / 3.1) * 22,
+        1
+    ),
+    ABS(
+        ROUND(
+            SIN((s.sort_index * 5.0 + day_range.X * 2.0 + hour_range.X) / 4.5) * 118
+            + COS((hour_range.X + 1.0) / 3.1) * 22,
+            1
+        )
+    ) <= 120
+FROM sa_station s
+CROSS JOIN SYSTEM_RANGE(0, 29) AS day_range
+CROSS JOIN SYSTEM_RANGE(0, 23) AS hour_range;
+
+INSERT INTO fc_error_sample (
+    station_id, biz_date, hour_slot, forecast_type, error_kw, qualified
+)
+SELECT
+    s.id,
+    CAST(DATEADD('DAY', -day_range.X, DATE '2026-03-30') AS DATE),
+    hour_range.X,
+    'ultra-short',
+    ROUND(
+        SIN((s.sort_index * 4.0 + day_range.X * 3.0 + hour_range.X) / 5.2) * 72
+        + COS((hour_range.X + 2.0) / 2.7) * 15,
+        1
+    ),
+    ABS(
+        ROUND(
+            SIN((s.sort_index * 4.0 + day_range.X * 3.0 + hour_range.X) / 5.2) * 72
+            + COS((hour_range.X + 2.0) / 2.7) * 15,
+            1
+        )
+    ) <= 80
+FROM sa_station s
+CROSS JOIN SYSTEM_RANGE(0, 29) AS day_range
+CROSS JOIN SYSTEM_RANGE(0, 23) AS hour_range;
+
+INSERT INTO fc_monthly_accuracy_snapshot (
+    station_id, month_key, forecast_type, mae_kw, rmse_kw, accuracy_pct
+)
+SELECT
+    s.id,
+    FORMATDATETIME(DATEADD('MONTH', -month_range.X, DATE '2026-03-01'), 'yyyy-MM'),
+    'day-ahead',
+    ROUND(138 - month_range.X * 7 + MOD(s.sort_index, 4) * 6, 1),
+    ROUND(182 - month_range.X * 8 + MOD(s.sort_index, 5) * 7, 1),
+    ROUND(89.6 + month_range.X * 0.8 - MOD(s.sort_index, 4) * 0.35, 1)
+FROM sa_station s
+CROSS JOIN SYSTEM_RANGE(0, 5) AS month_range;
+
+INSERT INTO fc_monthly_accuracy_snapshot (
+    station_id, month_key, forecast_type, mae_kw, rmse_kw, accuracy_pct
+)
+SELECT
+    s.id,
+    FORMATDATETIME(DATEADD('MONTH', -month_range.X, DATE '2026-03-01'), 'yyyy-MM'),
+    'ultra-short',
+    ROUND(92 - month_range.X * 5 + MOD(s.sort_index, 4) * 4, 1),
+    ROUND(128 - month_range.X * 6 + MOD(s.sort_index, 5) * 5, 1),
+    ROUND(92.4 + month_range.X * 0.7 - MOD(s.sort_index, 4) * 0.28, 1)
+FROM sa_station s
+CROSS JOIN SYSTEM_RANGE(0, 5) AS month_range;
+
+INSERT INTO fc_adjustable_window (
+    station_id, biz_date, window_order, start_slot, end_slot, window_status
+)
+SELECT
+    s.id,
+    DATE '2026-03-30',
+    1,
+    24,
+    43,
+    CASE
+        WHEN s.status IN ('offline', 'fault') THEN 'unavailable'
+        WHEN s.status = 'maintenance' THEN 'dispatching'
+        ELSE 'available'
+    END
+FROM sa_station s;
+
+INSERT INTO fc_adjustable_window (
+    station_id, biz_date, window_order, start_slot, end_slot, window_status
+)
+SELECT
+    s.id,
+    DATE '2026-03-30',
+    2,
+    44,
+    59,
+    CASE
+        WHEN s.status = 'offline' THEN 'unavailable'
+        ELSE 'dispatching'
+    END
+FROM sa_station s;
+
+INSERT INTO fc_adjustable_window (
+    station_id, biz_date, window_order, start_slot, end_slot, window_status
+)
+SELECT
+    s.id,
+    DATE '2026-03-30',
+    3,
+    60,
+    75,
+    CASE
+        WHEN s.status IN ('offline', 'fault') THEN 'unavailable'
+        ELSE 'available'
+    END
+FROM sa_station s;

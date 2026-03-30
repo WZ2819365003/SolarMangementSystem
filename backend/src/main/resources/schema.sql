@@ -2,6 +2,12 @@ DROP TABLE IF EXISTS dashboard_alarm_snapshot;
 DROP TABLE IF EXISTS dashboard_station_status_snapshot;
 DROP TABLE IF EXISTS dashboard_vpp_node_snapshot;
 DROP TABLE IF EXISTS dashboard_station;
+DROP TABLE IF EXISTS fc_adjustable_window;
+DROP TABLE IF EXISTS fc_monthly_accuracy_snapshot;
+DROP TABLE IF EXISTS fc_error_sample;
+DROP TABLE IF EXISTS fc_prediction_series_15m;
+DROP TABLE IF EXISTS fc_station_model_binding;
+DROP TABLE IF EXISTS fc_model;
 DROP TABLE IF EXISTS sa_inverter_alarm;
 DROP TABLE IF EXISTS sa_station_strategy;
 DROP TABLE IF EXISTS sa_inverter;
@@ -235,4 +241,77 @@ CREATE TABLE sa_inverter_alarm (
     status VARCHAR(32) NOT NULL,
     CONSTRAINT fk_sa_inverter_alarm_inverter
         FOREIGN KEY (inverter_id) REFERENCES sa_inverter(id)
+);
+
+CREATE TABLE fc_model (
+    id VARCHAR(32) PRIMARY KEY,
+    name VARCHAR(128) NOT NULL,
+    type VARCHAR(32) NOT NULL,
+    version VARCHAR(32) NOT NULL,
+    provider VARCHAR(64) NOT NULL,
+    description VARCHAR(255) NOT NULL,
+    status VARCHAR(32) NOT NULL
+);
+
+CREATE TABLE fc_station_model_binding (
+    station_id VARCHAR(32) PRIMARY KEY,
+    day_ahead_model_id VARCHAR(32) NOT NULL,
+    ultra_short_model_id VARCHAR(32) NOT NULL,
+    confidence_level DECIMAL(5, 2) NOT NULL,
+    CONSTRAINT fk_fc_station_model_binding_station
+        FOREIGN KEY (station_id) REFERENCES sa_station(id),
+    CONSTRAINT fk_fc_station_model_binding_day_ahead
+        FOREIGN KEY (day_ahead_model_id) REFERENCES fc_model(id),
+    CONSTRAINT fk_fc_station_model_binding_ultra_short
+        FOREIGN KEY (ultra_short_model_id) REFERENCES fc_model(id)
+);
+
+CREATE TABLE fc_prediction_series_15m (
+    station_id VARCHAR(32) NOT NULL,
+    biz_date DATE NOT NULL,
+    time_slot INT NOT NULL,
+    forecast_type VARCHAR(32) NOT NULL,
+    predicted_power_kw DECIMAL(12, 2) NOT NULL,
+    upper_bound_kw DECIMAL(12, 2) NOT NULL,
+    lower_bound_kw DECIMAL(12, 2) NOT NULL,
+    scenario_tag VARCHAR(32) NOT NULL,
+    PRIMARY KEY (station_id, biz_date, time_slot, forecast_type),
+    CONSTRAINT fk_fc_prediction_station
+        FOREIGN KEY (station_id) REFERENCES sa_station(id)
+);
+
+CREATE TABLE fc_error_sample (
+    station_id VARCHAR(32) NOT NULL,
+    biz_date DATE NOT NULL,
+    hour_slot INT NOT NULL,
+    forecast_type VARCHAR(32) NOT NULL,
+    error_kw DECIMAL(12, 2) NOT NULL,
+    qualified BOOLEAN NOT NULL,
+    PRIMARY KEY (station_id, biz_date, hour_slot, forecast_type),
+    CONSTRAINT fk_fc_error_sample_station
+        FOREIGN KEY (station_id) REFERENCES sa_station(id)
+);
+
+CREATE TABLE fc_monthly_accuracy_snapshot (
+    station_id VARCHAR(32) NOT NULL,
+    month_key VARCHAR(8) NOT NULL,
+    forecast_type VARCHAR(32) NOT NULL,
+    mae_kw DECIMAL(12, 2) NOT NULL,
+    rmse_kw DECIMAL(12, 2) NOT NULL,
+    accuracy_pct DECIMAL(5, 2) NOT NULL,
+    PRIMARY KEY (station_id, month_key, forecast_type),
+    CONSTRAINT fk_fc_monthly_accuracy_station
+        FOREIGN KEY (station_id) REFERENCES sa_station(id)
+);
+
+CREATE TABLE fc_adjustable_window (
+    station_id VARCHAR(32) NOT NULL,
+    biz_date DATE NOT NULL,
+    window_order INT NOT NULL,
+    start_slot INT NOT NULL,
+    end_slot INT NOT NULL,
+    window_status VARCHAR(32) NOT NULL,
+    PRIMARY KEY (station_id, biz_date, window_order),
+    CONSTRAINT fk_fc_adjustable_window_station
+        FOREIGN KEY (station_id) REFERENCES sa_station(id)
 );
