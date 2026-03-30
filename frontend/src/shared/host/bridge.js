@@ -1,4 +1,10 @@
+import axios from 'axios'
 import { mockHandlers } from '@/shared/mock/data'
+
+const REQUEST_MODE_BACKEND = 'backend'
+const REQUEST_MODE_MOCK = 'mock'
+const backendBaseUrl = process.env.VUE_APP_BACKEND_BASE_URL || '/api'
+const requestMode = process.env.VUE_APP_REQUEST_MODE || REQUEST_MODE_BACKEND
 
 function getTsxRuntime() {
   return window._tsx || {}
@@ -42,11 +48,31 @@ export function syncDocumentTitle(title) {
   document.title = title
 }
 
+function shouldUseHostRequest(apirequest) {
+  return typeof apirequest === 'function'
+}
+
+function shouldUseMockRequest() {
+  return requestMode === REQUEST_MODE_MOCK
+}
+
+async function requestViaBackend(url, options = {}) {
+  const response = await axios({
+    baseURL: backendBaseUrl,
+    url,
+    method: options.method || 'get',
+    data: options.data,
+    params: options.params
+  })
+
+  return normalizeResponse(response.data)
+}
+
 export async function request(url, options = {}) {
   const tsx = getTsxRuntime()
   const apirequest = tsx.apirequest
 
-  if (typeof apirequest === 'function' && process.env.NODE_ENV === 'production') {
+  if (shouldUseHostRequest(apirequest)) {
     const response = await apirequest({
       url,
       method: options.method || 'get',
@@ -54,6 +80,10 @@ export async function request(url, options = {}) {
       params: options.params
     })
     return normalizeResponse(response)
+  }
+
+  if (!shouldUseMockRequest()) {
+    return requestViaBackend(url, options)
   }
 
   const handler = mockHandlers[url]

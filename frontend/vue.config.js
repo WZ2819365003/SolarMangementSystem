@@ -1,5 +1,7 @@
 const path = require('path')
 const packageJson = require('./package.json')
+const backendProxyTarget =
+  process.env.VUE_APP_BACKEND_PROXY_TARGET || 'http://127.0.0.1:8091'
 
 module.exports = {
   publicPath: process.env.NODE_ENV === 'production' ? '/pvms/' : '/',
@@ -11,7 +13,13 @@ module.exports = {
     headers: {
       'Access-Control-Allow-Origin': '*'
     },
-    historyApiFallback: true
+    historyApiFallback: true,
+    proxy: {
+      '/api': {
+        target: backendProxyTarget,
+        changeOrigin: true
+      }
+    }
   },
   configureWebpack: {
     resolve: {
