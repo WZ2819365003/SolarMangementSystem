@@ -2,6 +2,12 @@ DROP TABLE IF EXISTS dashboard_alarm_snapshot;
 DROP TABLE IF EXISTS dashboard_station_status_snapshot;
 DROP TABLE IF EXISTS dashboard_vpp_node_snapshot;
 DROP TABLE IF EXISTS dashboard_station;
+DROP TABLE IF EXISTS sg_strategy_snapshot;
+DROP TABLE IF EXISTS sg_revenue_daily;
+DROP TABLE IF EXISTS sg_price_period;
+DROP TABLE IF EXISTS sg_execution_log;
+DROP TABLE IF EXISTS sg_strategy_period;
+DROP TABLE IF EXISTS sg_strategy;
 DROP TABLE IF EXISTS fc_adjustable_window;
 DROP TABLE IF EXISTS fc_monthly_accuracy_snapshot;
 DROP TABLE IF EXISTS fc_error_sample;
@@ -314,4 +320,84 @@ CREATE TABLE fc_adjustable_window (
     PRIMARY KEY (station_id, biz_date, window_order),
     CONSTRAINT fk_fc_adjustable_window_station
         FOREIGN KEY (station_id) REFERENCES sa_station(id)
+);
+
+CREATE TABLE sg_strategy (
+    id VARCHAR(32) PRIMARY KEY,
+    station_id VARCHAR(32) NOT NULL,
+    company_id VARCHAR(32) NOT NULL,
+    name VARCHAR(128) NOT NULL,
+    type VARCHAR(32) NOT NULL,
+    status VARCHAR(32) NOT NULL,
+    mode VARCHAR(32) NOT NULL,
+    target_power_kw DECIMAL(12, 2) NOT NULL,
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP NOT NULL,
+    version_no INT NOT NULL,
+    remark VARCHAR(255),
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    CONSTRAINT fk_sg_strategy_station
+        FOREIGN KEY (station_id) REFERENCES sa_station(id),
+    CONSTRAINT fk_sg_strategy_company
+        FOREIGN KEY (company_id) REFERENCES sa_company(id)
+);
+
+CREATE TABLE sg_strategy_period (
+    strategy_id VARCHAR(32) NOT NULL,
+    period_order INT NOT NULL,
+    start_slot INT NOT NULL,
+    end_slot INT NOT NULL,
+    action_type VARCHAR(32) NOT NULL,
+    target_ratio DECIMAL(6, 3) NOT NULL,
+    PRIMARY KEY (strategy_id, period_order),
+    CONSTRAINT fk_sg_strategy_period_strategy
+        FOREIGN KEY (strategy_id) REFERENCES sg_strategy(id)
+);
+
+CREATE TABLE sg_execution_log (
+    id VARCHAR(64) PRIMARY KEY,
+    strategy_id VARCHAR(32) NOT NULL,
+    event_time TIMESTAMP NOT NULL,
+    action VARCHAR(64) NOT NULL,
+    result VARCHAR(32) NOT NULL,
+    deviation_rate_pct DECIMAL(6, 2) NOT NULL,
+    operator_name VARCHAR(64) NOT NULL,
+    CONSTRAINT fk_sg_execution_log_strategy
+        FOREIGN KEY (strategy_id) REFERENCES sg_strategy(id)
+);
+
+CREATE TABLE sg_price_period (
+    station_id VARCHAR(32) NOT NULL,
+    period_order INT NOT NULL,
+    start_slot INT NOT NULL,
+    end_slot INT NOT NULL,
+    price_type VARCHAR(16) NOT NULL,
+    price_cny_per_kwh DECIMAL(8, 3) NOT NULL,
+    PRIMARY KEY (station_id, period_order),
+    CONSTRAINT fk_sg_price_period_station
+        FOREIGN KEY (station_id) REFERENCES sa_station(id)
+);
+
+CREATE TABLE sg_revenue_daily (
+    strategy_id VARCHAR(32) NOT NULL,
+    biz_date DATE NOT NULL,
+    estimated_revenue_cny DECIMAL(12, 2) NOT NULL,
+    actual_revenue_cny DECIMAL(12, 2) NOT NULL,
+    peak_saving_cny DECIMAL(12, 2) NOT NULL,
+    response_reward_cny DECIMAL(12, 2) NOT NULL,
+    penalty_cny DECIMAL(12, 2) NOT NULL,
+    PRIMARY KEY (strategy_id, biz_date),
+    CONSTRAINT fk_sg_revenue_daily_strategy
+        FOREIGN KEY (strategy_id) REFERENCES sg_strategy(id)
+);
+
+CREATE TABLE sg_strategy_snapshot (
+    strategy_id VARCHAR(32) PRIMARY KEY,
+    last_simulated_revenue_cny DECIMAL(12, 2) NOT NULL,
+    confidence_low_cny DECIMAL(12, 2) NOT NULL,
+    confidence_high_cny DECIMAL(12, 2) NOT NULL,
+    success_probability_pct DECIMAL(5, 2) NOT NULL,
+    CONSTRAINT fk_sg_strategy_snapshot_strategy
+        FOREIGN KEY (strategy_id) REFERENCES sg_strategy(id)
 );
