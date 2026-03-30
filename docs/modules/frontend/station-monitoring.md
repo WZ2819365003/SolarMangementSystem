@@ -1,197 +1,126 @@
-# Production Monitor Module
+# Production Monitor Frontend Module
 
-## Scope
+## 1. 模块定位
 
-- 模块编号: `M02`
-- 当前模块名称: `生产监控层`
-- 当前主入口:
-  - `/production-monitor/overview`
-  - `/production-monitor/output`
-  - `/production-monitor/dispatch`
-  - `/production-monitor/weather`
-- 当前产品定位:
-  - 面向虚拟电厂聚合商的光伏生产监控模块
-  - 模块 1 负责看全局，模块 2 负责看某个聚合资源单元的生产运行
+`production-monitor` 是 M02 的前端壳层。
 
-## Core Model
+它现在不是一个单页面，而是两个模式共存：
 
-- 一级业务对象是 `聚合资源单元`
-- 成员对象是 `电站`
-- 同一个聚合资源单元内:
-  - 成员电站在地理位置上相对接近
-  - 共用同一套天气剖面
-  - 共用同一条总出力趋势
-  - 各电站只按照容量权重和状态系数分摊出力比例
-- 如果成员电站距离过远:
-  - 不能继续放在同一个资源单元中建模
-  - 应单独配置为新的资源单元
+1. 资源总览模式  
+   面向聚合资源单元，后端接口前缀是 `/api/pvms/production-monitor/*`
 
-## Routes
+2. 电站监控模式  
+   面向公司 / 电站 / 逆变器，后端接口前缀是 `/api/pvms/station-tree` 和 `/api/pvms/station-archive/*`
 
-### `/production-monitor/overview`
+理解这两个模式的边界，是继续维护 M02 的前提。
 
-- 作用:
-  - 查看资源单元健康状态、可调能力、在线率、天气快报和成员电站摘要
-- 页面结构:
-  - 资源单元状态条
-  - 6 张 KPI 卡
-  - 成员电站摘要表
-  - 天气快报卡
-  - 告警快报卡
-  - 运行摘要表
+## 2. 页面入口
 
-### `/production-monitor/output`
+- 页面文件  
+  `frontend/src/modules/production-monitor/pages/ProductionMonitorPage.vue`
 
-- 作用:
-  - 查看资源单元出力预测、实际出力、共享天气趋势和成员电站贡献
-- 页面结构:
-  - 指标摘要卡
-  - 主出力曲线
-  - 天气趋势曲线
-  - 成员电站贡献排行
-  - 分时数据表
+- API 封装  
+  `frontend/src/api/pvms.js`
 
-### `/production-monitor/dispatch`
+- 电站监控复用组件  
+  `frontend/src/modules/stations/components/`
 
-- 作用:
-  - 查看调度指令执行、响应时长、风险提示和执行记录
-- 页面结构:
-  - 执行摘要卡
-  - 指令执行趋势
-  - 风险提示列表
-  - 执行记录表
+## 3. 当前路由与模式
 
-### `/production-monitor/weather`
+当前主入口仍然是：
 
-- 作用:
-  - 从光伏生产视角解读天气变化，并为后续调度判断提供依据
-- 页面结构:
-  - 天气摘要卡
-  - 72 小时趋势图
-  - 光伏天气影响表
+- `/production-monitor/overview`
+- `/production-monitor/output`
+- `/production-monitor/dispatch`
+- `/production-monitor/weather`
 
-## Shared Query State
+但在同一套页面壳里，用户可以切到“电站监控模式”。
 
-- 页面顶部四个视图共享同一套查询状态
-- 当前共享字段:
-  - `resourceUnitId`
-  - `region`
-  - `city`
-  - `date`
-  - `granularity`
-- 当前行为:
-  - 切换横向导航时保留当前资源单元和筛选条件
-  - 切换资源单元后只刷新当前视图的数据
-  - `date` 当前主要作为前端保留参数，后端 mock 还没有真正消费它
+切到电站监控模式后：
+- 左侧显示公司 / 电站 / 逆变器树
+- 右侧根据选中节点显示公司总览、电站图表或逆变器详情
 
-## Frontend Request Chain
+## 4. 当前前后端边界
 
-- API 封装入口:
-  - `src/api/pvms.js`
-- 宿主桥接:
-  - `src/shared/host/bridge.js`
-- 本地 mock:
-  - `src/shared/mock/station-monitoring.js`
+### 资源总览模式
 
-开发态默认行为:
+后端已经完成：
+- H2 种子数据
+- 资源单元、天气、调度、负荷与出力计算
 
-- 优先走前端 mock
-- 不直接请求本地 Spring Boot
-- 后续如果要切到本地后端联调，需要调整桥接层
+核心接口：
+- `/api/pvms/production-monitor/meta`
+- `/api/pvms/production-monitor/overview`
+- `/api/pvms/production-monitor/output`
+- `/api/pvms/production-monitor/load`
+- `/api/pvms/production-monitor/dispatch`
+- `/api/pvms/production-monitor/weather`
 
-## APIs
+### 电站监控模式
 
-### `GET /pvms/production-monitor/meta`
+后端也已经完成：
+- `station-tree`
+- `company-overview`
+- `resource-overview`
+- `station-realtime`
+- `station-adjustable`
+- `station-strategy`
+- `inverter-realtime`
 
-- 用途:
-  - 初始化区域、城市、资源单元和默认资源单元
-- 当前请求参数:
-  - 无必填参数
-- 当前响应核心字段:
-  - `defaultResourceUnitId`
-  - `regionOptions`
-  - `resourceUnits`
+也就是说，M02 当前两条主链都已经不再依赖前端本地 mock 才能联调。
 
-### `GET /pvms/production-monitor/overview`
+## 5. 查询状态
 
-- 用途:
-  - 获取资源总览视图数据
-- 当前请求参数:
-  - `resourceUnitId`
-- 当前响应核心字段:
-  - `info`
-  - `kpis`
-  - `memberStations`
-  - `weatherBrief`
-  - `alarmBrief`
-  - `summaryTable`
+M02 页面顶部共享以下查询状态：
 
-### `GET /pvms/production-monitor/output`
+- `resourceUnitId`
+- `region`
+- `city`
+- `date`
+- `granularity`
 
-- 用途:
-  - 获取出力分析视图数据
-- 当前请求参数:
-  - `resourceUnitId`
-  - `granularity`
-- 当前响应核心字段:
-  - `summary`
-  - `curve`
-  - `weatherTrend`
-  - `contributionRanking`
-  - `table`
+但要注意：
 
-### `GET /pvms/production-monitor/dispatch`
+- 资源总览模式主要消费 `resourceUnitId`
+- 电站监控模式主要消费 `stationId / inverterId / companyId`
+- `date` 和 `granularity` 在电站模式下会传给 `station-realtime`
 
-- 用途:
-  - 获取调度执行视图数据
-- 当前请求参数:
-  - `resourceUnitId`
-- 当前响应核心字段:
-  - `summary`
-  - `executionTrend`
-  - `riskHints`
-  - `records`
+## 6. 开发时怎么判断问题在哪一层
 
-### `GET /pvms/production-monitor/weather`
+### 如果是资源总览模式有问题
 
-- 用途:
-  - 获取天气研判视图数据
-- 当前请求参数:
-  - `resourceUnitId`
-- 当前响应核心字段:
-  - `summary`
-  - `trend`
-  - `impactTable`
+优先检查：
+- `production-monitor` 接口是否返回正确
+- 资源单元筛选状态是否变化
+- `overview / output / load / dispatch / weather` 五个视图是否只刷新当前视图
 
-## Deprecated Semantics
+### 如果是电站监控模式有问题
 
-- 旧模块 2 主链路:
-  - `/station`
-  - `/station/:id`
-- 当前处理方式:
-  - 路由保留重定向，统一跳到 `/production-monitor/overview`
-- 旧接口集合:
-  - `/pvms/resource-units/list`
-  - `/pvms/resource-units/{id}/overview`
-  - `/pvms/resource-units/{id}/power-curve`
-- 当前模块主链路不再使用这套接口
+优先检查：
+- `station-tree` 是否返回三层节点
+- 当前选中节点类型是否正确
+- `station-realtime` 的 `metric` 是否正确传出
+- `inverter-realtime` 是否只传了 `inverterId`
 
-## Visual Notes
+## 7. 维护建议
 
-- 保持模块 1 的深蓝色底、宿主主题变量和卡片语义
-- 左侧菜单中模块 2 放在模块 1 下方
-- 页面顶部使用横向视图导航，而不是二级左菜单
-- 天气信息必须是光伏相关天气，不是普通天气描述
-- 页面结构强调“模块壳子 + 共享筛选 + 不同视图”，而不是“列表页 + 详情页”
+### 新人先读这三份文档
 
-## Tests
+1. `docs/modules/frontend/stations.md`
+2. `docs/modules/backend/station-archive.md`
+3. `docs/modules/backend/production-monitor.md`
 
-- Playwright:
-  - `tests/playwright/specs/station-monitoring.spec.js`
-  - `tests/playwright/specs/layout-smoke.spec.js`
-- 当前回归重点:
-  - 模块页壳子和横向导航存在
-  - 四个视图能切换
-  - 资源单元切换后当前视图刷新
-  - 成员电站共享天气上下文
-  - 页面没有大块留白或布局塌陷
+### 改 M02 页面前先确认
+
+1. 你改的是资源总览模式还是电站监控模式
+2. 对应接口前缀是不是同一组
+3. 当前问题是页面状态问题、契约问题，还是后端计算问题
+
+### 不要再默认认为“电站监控是前端 mock”
+
+截至 `2026-03-30`，这个判断已经过时。
+
+正确判断是：
+- 开发环境底图仍然是前端展示
+- 资源总览数据已经在后端 H2
+- 电站监控数据也已经在后端 H2

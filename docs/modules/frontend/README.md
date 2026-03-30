@@ -1,14 +1,14 @@
 # Frontend 模块文档索引
 
-本目录记录前端各模块的页面职责、路由、核心文件和接口调用情况。
+这组文档记录前端模块的页面职责、核心文件、接口依赖和维护边界。
 
 ## 建议阅读顺序
 
 1. `infrastructure.md`
 2. `dashboard.md`
 3. `production-monitor.md`
-4. `stations.md`
-5. `station-monitoring.md`
+4. `station-monitoring.md`
+5. `stations.md`
 6. `forecast.md`
 7. `strategy.md`
 8. `devices.md`
@@ -16,21 +16,28 @@
 
 ## 模块说明
 
-| 文档 | 对应模块 | 说明 |
+| 文档 | 模块 | 说明 |
 | --- | --- | --- |
-| `infrastructure.md` | 前端基础设施 | 运行环境、UI 库、地图依赖、宿主适配 |
-| `dashboard.md` | 综合监控中心 | 首页聚合页 |
-| `production-monitor.md` | 生产监控 | 资源总览 + 电站监控双模式 |
-| `stations.md` | 电站档案 / 电站监控组件 | 树、详情面板、逆变器等复用组件 |
-| `station-monitoring.md` | 站点与资源监控 | 资源单元和单站视角 |
-| `forecast.md` | 预测与分析 | 三个子视图、图表和契约风险 |
-| `strategy.md` | 策略管理 | 列表、配置、收益、批量操作 |
+| `infrastructure.md` | 基础设施 | 宿主桥接、UI 依赖、地图依赖 |
+| `dashboard.md` | 综合监控中心 | 首页 |
+| `production-monitor.md` | M02 页面壳 | 资源总览 + 电站监控双模式 |
+| `station-monitoring.md` | M02 生产监控 | M02 的模式边界和数据来源 |
+| `stations.md` | 电站监控组件 | 树、面板、策略、逆变器详情 |
+| `forecast.md` | 预测与分析 | M03 |
+| `strategy.md` | 策略管理 | M04 |
 | `devices.md` | 设备监控 | 设备状态和分布 |
-| `alarms.md` | 告警中心 | 告警列表和处置态势 |
+| `alarms.md` | 告警中心 | 告警列表和处理态势 |
 
-## 维护提醒
+## 当前状态提示
 
-- 前端接口总入口在 `frontend/src/api/pvms.js`
-- 开发态请求行为取决于 `frontend/src/shared/host/bridge.js`
-- `production-monitor` 会复用 `stations` 组件和 `stationarchive` 后端接口，维护时不要孤立看待
-- `production-monitor.md` 已补充当前 H2 后端链路、`load` 页结构和 `station` 模式边界
+截至 `2026-03-30`：
+
+- `production-monitor` 页面已经不只是资源总览页
+- 电站监控模式和资源总览模式共存在同一个前端壳层
+- 电站监控模式当前也能直接联调后端 H2 数据
+
+维护时建议把下面三份文档一起看：
+
+1. `production-monitor.md`
+2. `station-monitoring.md`
+3. `stations.md`

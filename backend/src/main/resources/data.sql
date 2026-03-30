@@ -248,3 +248,169 @@ SELECT
     END AS deviation_reason
 FROM pm_resource_unit u
 CROSS JOIN SYSTEM_RANGE(0, 5) AS slot_range;
+
+INSERT INTO sa_company (id, name, region, sort_index) VALUES
+('com-001', '深圳市悦美颐华物业管理有限公司', '华南', 1),
+('com-002', '武汉恒实物业管理有限公司', '华中', 2),
+('com-003', '合肥盛景新能源有限公司', '华东', 3),
+('com-004', '天津港储能科技有限公司', '华北', 4),
+('com-005', '成都西部新能源有限公司', '西南', 5);
+
+INSERT INTO sa_station (
+    id, company_id, name, capacity_kwp, status, data_quality, grid_status,
+    grid_status_label, commission_date, address, load_base_kw, sort_index
+) VALUES
+('SZ-001', 'com-001', '深圳湾科创园 A 站', 1800, 'normal', 'good', 'grid-connected', '并网', DATE '2024-06-15', '深圳湾科创园 A1 栋屋顶', 2100, 1),
+('SZ-002', 'com-001', '南山智造中心 B 站', 1400, 'normal', 'good', 'grid-connected', '并网', DATE '2024-07-08', '南山智造中心 B 区连廊屋顶', 1600, 2),
+('SZ-003', 'com-001', '前海冷站屋顶 C 站', 1200, 'warning', 'missing', 'grid-connected', '并网', DATE '2024-08-22', '前海冷站 C 区屋顶', 1500, 3),
+('SZ-004', 'com-001', '生态园 D 站', 1000, 'normal', 'good', 'grid-connected', '并网', DATE '2024-09-12', '生态园 D 区停车棚', 1200, 4),
+('DG-001', 'com-001', '松山湖智造园 A 站', 1900, 'normal', 'good', 'grid-connected', '并网', DATE '2024-05-18', '松山湖智造园 A 区厂房屋顶', 2200, 5),
+('DG-002', 'com-001', '松山湖制造园 B 站', 1600, 'warning', 'missing', 'grid-connected', '并网', DATE '2024-10-03', '松山湖制造园 B 区屋顶', 1800, 6),
+('WH-001', 'com-002', '武汉物流园 A 站', 1600, 'fault', 'missing', 'grid-connected', '并网', DATE '2024-04-18', '武汉物流园 A 区仓库屋顶', 1900, 7),
+('WH-002', 'com-002', '武汉仓储园 B 站', 1400, 'warning', 'missing', 'grid-connected', '并网', DATE '2024-11-06', '武汉仓储园 B 区屋顶', 1700, 8),
+('WH-003', 'com-002', '鄂州协同园 C 站', 1200, 'normal', 'good', 'grid-connected', '并网', DATE '2025-01-16', '鄂州协同园 C 区连廊', 1400, 9),
+('HF-001', 'com-003', '合肥研发中心 A 站', 1000, 'maintenance', 'missing', 'grid-connected', '并网', DATE '2024-06-28', '合肥研发中心 A 区车棚', 1100, 10),
+('HF-002', 'com-003', '合肥实证基地 B 站', 900, 'normal', 'good', 'grid-connected', '并网', DATE '2024-12-09', '合肥实证基地 B 区实验楼', 1000, 11),
+('TJ-001', 'com-004', '天津港储能园 A 站', 1200, 'offline', 'missing', 'grid-connected', '并网', DATE '2024-05-25', '天津港储能园 A 区屋顶', 1400, 12),
+('TJ-002', 'com-004', '天津港仓储园 B 站', 1000, 'offline', 'missing', 'grid-connected', '并网', DATE '2024-07-18', '天津港仓储园 B 区仓顶', 1200, 13),
+('CD-001', 'com-005', '成都西部基地 A 站', 1700, 'normal', 'good', 'grid-connected', '并网', DATE '2024-02-28', '成都西部基地 A 区生产楼', 2000, 14),
+('CD-002', 'com-005', '成都连廊产区 B 站', 1500, 'normal', 'good', 'grid-connected', '并网', DATE '2024-10-15', '成都连廊产区 B 区连廊', 1700, 15),
+('CD-003', 'com-005', '成都仓储园 C 站', 1300, 'warning', 'missing', 'grid-connected', '并网', DATE '2025-02-20', '成都仓储园 C 区仓顶', 1500, 16);
+
+INSERT INTO sa_station_curve_15m (
+    station_id, biz_date, time_slot, load_kw, pv_output_kw,
+    forecast_day_ahead_kw, forecast_ultra_short_kw
+)
+SELECT
+    s.id,
+    DATE '2026-03-30',
+    slot_range.X,
+    ROUND(
+        s.load_base_kw * (
+            0.42
+            + 0.32 * EXP(-0.5 * POWER((((slot_range.X * 15.0) / 60.0) - 10.0) / 1.6, 2))
+            + 0.28 * EXP(-0.5 * POWER((((slot_range.X * 15.0) / 60.0) - 15.2) / 2.1, 2))
+            + CASE
+                WHEN ((slot_range.X * 15.0) / 60.0) < 6 OR ((slot_range.X * 15.0) / 60.0) > 22 THEN -0.14
+                ELSE 0
+            END
+            + SIN((s.sort_index * 11.0 + slot_range.X) / 7.0) * 0.03
+        ),
+        1
+    ) AS load_kw,
+    ROUND(
+        GREATEST(
+            0,
+            s.capacity_kwp
+            * GREATEST(0, SIN((((slot_range.X * 15.0) / 60.0) - 6.0) / 12.0 * PI()))
+            * CASE s.status
+                WHEN 'normal' THEN 0.78
+                WHEN 'warning' THEN 0.70
+                WHEN 'fault' THEN 0.42
+                WHEN 'maintenance' THEN 0.58
+                WHEN 'offline' THEN 0.05
+                ELSE 0.74
+            END
+            * (0.96 + COS((s.sort_index * 5.0 + slot_range.X) / 8.0) * 0.04)
+        ),
+        1
+    ) AS pv_output_kw,
+    ROUND(
+        GREATEST(
+            0,
+            s.capacity_kwp
+            * GREATEST(0, SIN((((slot_range.X * 15.0) / 60.0) - 6.0) / 12.0 * PI()))
+            * CASE s.status
+                WHEN 'offline' THEN 0.16
+                WHEN 'fault' THEN 0.58
+                WHEN 'maintenance' THEN 0.66
+                WHEN 'warning' THEN 0.74
+                ELSE 0.81
+            END
+            * (0.98 + SIN((s.sort_index * 3.0 + slot_range.X) / 10.0) * 0.03)
+        ),
+        1
+    ) AS forecast_day_ahead_kw,
+    ROUND(
+        GREATEST(
+            0,
+            s.capacity_kwp
+            * GREATEST(0, SIN((((slot_range.X * 15.0) / 60.0) - 6.0) / 12.0 * PI()))
+            * CASE s.status
+                WHEN 'offline' THEN 0.10
+                WHEN 'fault' THEN 0.48
+                WHEN 'maintenance' THEN 0.61
+                WHEN 'warning' THEN 0.72
+                ELSE 0.79
+            END
+            * (0.99 + COS((s.sort_index * 4.0 + slot_range.X) / 11.0) * 0.02)
+        ),
+        1
+    ) AS forecast_ultra_short_kw
+FROM sa_station s
+CROSS JOIN SYSTEM_RANGE(0, 95) AS slot_range;
+
+INSERT INTO sa_inverter (
+    id, station_id, name, sort_index, rated_power_kw, status, model, manufacturer,
+    serial_no, firmware_version, install_date, mppt_channels, dc_input_voltage_v,
+    ac_output_voltage_v, grid_frequency_hz, module_temperature_c, ambient_temperature_c,
+    string_count, panels_per_string
+)
+SELECT
+    s.id || '-INV-' || RIGHT('00' || CAST(seq_range.X AS VARCHAR), 2),
+    s.id,
+    'INV-' || RIGHT('00' || CAST(seq_range.X AS VARCHAR), 2) || ' (' ||
+        CAST(CAST(ROUND(s.capacity_kwp / CASE WHEN s.capacity_kwp > 1500 THEN 3 ELSE 2 END, 0) AS INT) AS VARCHAR) || 'kW)',
+    seq_range.X,
+    ROUND(s.capacity_kwp / CASE WHEN s.capacity_kwp > 1500 THEN 3 ELSE 2 END, 0),
+    CASE
+        WHEN s.status = 'offline' THEN 'offline'
+        WHEN s.status = 'fault' AND seq_range.X = CASE WHEN s.capacity_kwp > 1500 THEN 3 ELSE 2 END THEN 'fault'
+        WHEN s.status = 'warning' AND seq_range.X = CASE WHEN s.capacity_kwp > 1500 THEN 2 ELSE 1 END THEN 'warning'
+        WHEN s.status = 'maintenance' AND seq_range.X = 1 THEN 'maintenance'
+        ELSE 'normal'
+    END,
+    'SUN2000-' || CAST(CAST(ROUND(s.capacity_kwp / CASE WHEN s.capacity_kwp > 1500 THEN 3 ELSE 2 END, 0) AS INT) AS VARCHAR) || 'KTL',
+    CASE WHEN MOD(s.sort_index, 2) = 0 THEN '华为' ELSE '阳光电源' END,
+    'SN' || REPLACE(s.id, '-', '') || RIGHT('00' || CAST(seq_range.X AS VARCHAR), 2),
+    'V300R001C10SPC230',
+    s.commission_date,
+    CASE WHEN s.capacity_kwp > 1500 THEN 6 ELSE 4 END,
+    ROUND(580 + s.sort_index * 4 + seq_range.X * 12, 1),
+    380,
+    50,
+    ROUND(36 + MOD(s.sort_index, 6) * 1.6 + seq_range.X * 0.8, 1),
+    ROUND(23 + MOD(s.sort_index, 4) * 1.5, 1),
+    CASE WHEN s.capacity_kwp > 1500 THEN 12 + seq_range.X ELSE 8 + seq_range.X END,
+    20 + MOD(s.sort_index + seq_range.X, 6)
+FROM sa_station s
+CROSS JOIN SYSTEM_RANGE(1, 3) AS seq_range
+WHERE seq_range.X <= CASE WHEN s.capacity_kwp > 1500 THEN 3 ELSE 2 END;
+
+INSERT INTO sa_station_strategy (
+    station_id, name, type, status, start_time, end_time, target_power_kw, estimated_revenue_cny
+) VALUES
+('SZ-001', '华南园区调峰策略', '需求响应', '执行中', TIMESTAMP '2026-03-26 06:00:00', TIMESTAMP '2026-03-26 22:00:00', 1200, 580),
+('SZ-002', '南山区域调频策略', '调频辅助', '执行中', TIMESTAMP '2026-03-26 07:00:00', TIMESTAMP '2026-03-26 20:00:00', 1000, 420),
+('SZ-003', '前海分布式限出策略', '电网约束', '告警中', TIMESTAMP '2026-03-26 08:00:00', TIMESTAMP '2026-03-26 18:00:00', 800, 310),
+('SZ-004', '生态园自发自用策略', '自发自用', '执行中', TIMESTAMP '2026-03-26 06:30:00', TIMESTAMP '2026-03-26 19:00:00', 700, 260),
+('DG-001', '松山湖调峰策略', '需求响应', '执行中', TIMESTAMP '2026-03-26 06:00:00', TIMESTAMP '2026-03-26 21:00:00', 1500, 720),
+('DG-002', '松山湖制造园限出策略', '电网约束', '告警中', TIMESTAMP '2026-03-26 07:30:00', TIMESTAMP '2026-03-26 19:30:00', 1100, 480),
+('WH-001', '武汉物流园故障降额策略', '故障响应', '异常', TIMESTAMP '2026-03-26 05:00:00', TIMESTAMP '2026-03-26 23:00:00', 600, 180),
+('WH-002', '武汉仓储园限出策略', '电网约束', '告警中', TIMESTAMP '2026-03-26 07:00:00', TIMESTAMP '2026-03-26 20:00:00', 1000, 380),
+('WH-003', '鄂州协同园调峰策略', '需求响应', '执行中', TIMESTAMP '2026-03-26 06:30:00', TIMESTAMP '2026-03-26 21:30:00', 900, 410),
+('HF-001', '合肥研发中心检修策略', '检修窗口', '检修中', TIMESTAMP '2026-03-26 06:00:00', TIMESTAMP '2026-03-26 18:00:00', 400, 120),
+('HF-002', '合肥实证基地调峰策略', '需求响应', '执行中', TIMESTAMP '2026-03-26 07:00:00', TIMESTAMP '2026-03-26 20:00:00', 650, 280),
+('TJ-001', '天津港储能园离线恢复策略', '故障响应', '离线', TIMESTAMP '2026-03-26 00:00:00', TIMESTAMP '2026-03-26 23:59:00', 0, 0),
+('TJ-002', '天津港仓储园离线恢复策略', '故障响应', '离线', TIMESTAMP '2026-03-26 00:00:00', TIMESTAMP '2026-03-26 23:59:00', 0, 0),
+('CD-001', '成都西部基地调峰策略', '需求响应', '执行中', TIMESTAMP '2026-03-26 06:00:00', TIMESTAMP '2026-03-26 22:00:00', 1400, 680),
+('CD-002', '成都连廊产区调频策略', '调频辅助', '执行中', TIMESTAMP '2026-03-26 07:00:00', TIMESTAMP '2026-03-26 21:00:00', 1200, 550),
+('CD-003', '成都仓储园限出策略', '电网约束', '告警中', TIMESTAMP '2026-03-26 08:00:00', TIMESTAMP '2026-03-26 19:00:00', 900, 340);
+
+INSERT INTO sa_inverter_alarm (id, inverter_id, event_time, type, level, description, status) VALUES
+('SA-ALM-001', 'SZ-003-INV-02', TIMESTAMP '2026-03-30 12:18:00', 'MPPT偏低', '告警', 'MPPT 跟踪效率低于阈值 92%', '未处理'),
+('SA-ALM-002', 'DG-002-INV-02', TIMESTAMP '2026-03-30 13:05:00', '组串失衡', '告警', 'B2 屋顶区域组串电流偏差持续放大', '待确认'),
+('SA-ALM-003', 'WH-001-INV-03', TIMESTAMP '2026-03-30 13:42:00', '过温保护', '严重', '模块温度超过 75℃，设备已自动降额', '未处理'),
+('SA-ALM-004', 'WH-002-INV-01', TIMESTAMP '2026-03-30 11:56:00', '通信异常', '告警', '与采集器通信超时超过 30 秒', '已确认'),
+('SA-ALM-005', 'TJ-001-INV-01', TIMESTAMP '2026-03-30 10:14:00', '离线告警', '故障', '园区通信链路中断，逆变器处于离线状态', '未处理'),
+('SA-ALM-006', 'CD-003-INV-01', TIMESTAMP '2026-03-30 14:06:00', '绝缘阻抗低', '告警', '绝缘阻抗低于 500kΩ，建议安排现场排查', '待确认');
