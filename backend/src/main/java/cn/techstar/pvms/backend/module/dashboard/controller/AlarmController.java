@@ -1,7 +1,7 @@
 package cn.techstar.pvms.backend.module.dashboard.controller;
 
 import cn.techstar.pvms.backend.common.ApiResponse;
-import cn.techstar.pvms.backend.module.dashboard.service.DashboardMockService;
+import cn.techstar.pvms.backend.module.dashboard.service.DashboardMapDataService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -13,10 +13,10 @@ import java.util.Map;
 @RequestMapping("/api/pvms/alarms")
 public class AlarmController {
 
-    private final DashboardMockService dashboardMockService;
+    private final DashboardMapDataService dashboardMapDataService;
 
-    public AlarmController(DashboardMockService dashboardMockService) {
-        this.dashboardMockService = dashboardMockService;
+    public AlarmController(DashboardMapDataService dashboardMapDataService) {
+        this.dashboardMapDataService = dashboardMapDataService;
     }
 
     @GetMapping("/recent")
@@ -24,6 +24,6 @@ public class AlarmController {
         @RequestParam(required = false) String level,
         @RequestParam(required = false) String stationId
     ) {
-        return ApiResponse.success(dashboardMockService.getRecentAlarms(level, stationId));
+        return ApiResponse.success(dashboardMapDataService.getRecentAlarms(level, stationId));
     }
 }

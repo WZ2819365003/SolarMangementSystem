@@ -25,7 +25,10 @@ class DashboardControllerTest {
             .andExpect(jsonPath("$.data.summary.length()").value(5))
             .andExpect(jsonPath("$.data.stations.length()").value(6))
             .andExpect(jsonPath("$.data.stations[0].id").value("PV-001"))
-            .andExpect(jsonPath("$.data.stations[0].status").value("normal"));
+            .andExpect(jsonPath("$.data.stations[0].status").value("normal"))
+            .andExpect(jsonPath("$.data.stations[0].resourceUnitId").value("RU-001"))
+            .andExpect(jsonPath("$.data.stations[0].resourceUnitName").value("华南园区虚拟电厂"))
+            .andExpect(jsonPath("$.data.filters.regionOptions.length()").value(6));
     }
 
     @Test
@@ -84,5 +87,31 @@ class DashboardControllerTest {
             .andExpect(jsonPath("$.data.stationName").value("深圳港科园区光伏电站"))
             .andExpect(jsonPath("$.data.current.temperature").value(28))
             .andExpect(jsonPath("$.data.forecast.length()").value(3));
+    }
+
+    @Test
+    void shouldReturnDashboardOverview() throws Exception {
+        mockMvc.perform(get("/api/pvms/dashboard/overview"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0))
+            .andExpect(jsonPath("$.data.summaryCards").isArray())
+            .andExpect(jsonPath("$.data.summaryCards.length()").value(5))
+            .andExpect(jsonPath("$.data.trends.dates").isArray())
+            .andExpect(jsonPath("$.data.focusAlarms").isArray())
+            .andExpect(jsonPath("$.data.stationRows").isArray())
+            .andExpect(jsonPath("$.data.stationRows.length()").value(6));
+    }
+
+    @Test
+    void shouldReturnVppNodeStatus() throws Exception {
+        mockMvc.perform(get("/api/pvms/dashboard/vpp-node-status"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0))
+            .andExpect(jsonPath("$.data.nodeId").value("VPP-NODE-001"))
+            .andExpect(jsonPath("$.data.totalCapacityMw").isNumber())
+            .andExpect(jsonPath("$.data.availableCapacityMw").isNumber())
+            .andExpect(jsonPath("$.data.onlineStations").isNumber())
+            .andExpect(jsonPath("$.data.totalStations").value(6))
+            .andExpect(jsonPath("$.data.adjustableRangeMw.min").isNumber());
     }
 }

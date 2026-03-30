@@ -1,6 +1,7 @@
 package cn.techstar.pvms.backend.module.dashboard.controller;
 
 import cn.techstar.pvms.backend.common.ApiResponse;
+import cn.techstar.pvms.backend.module.dashboard.service.DashboardMapDataService;
 import cn.techstar.pvms.backend.module.dashboard.service.DashboardMockService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,9 +14,14 @@ import java.util.Map;
 @RequestMapping("/api/pvms/dashboard")
 public class DashboardController {
 
+    private final DashboardMapDataService dashboardMapDataService;
     private final DashboardMockService dashboardMockService;
 
-    public DashboardController(DashboardMockService dashboardMockService) {
+    public DashboardController(
+        DashboardMapDataService dashboardMapDataService,
+        DashboardMockService dashboardMockService
+    ) {
+        this.dashboardMapDataService = dashboardMapDataService;
         this.dashboardMockService = dashboardMockService;
     }
 
@@ -25,7 +31,7 @@ public class DashboardController {
         @RequestParam(required = false) String region,
         @RequestParam(required = false) String capacityRange
     ) {
-        return ApiResponse.success(dashboardMockService.getStationsGeo(status, region, capacityRange));
+        return ApiResponse.success(dashboardMapDataService.getStationsGeo(status, region, capacityRange));
     }
 
     @GetMapping("/kpi-summary")
@@ -48,5 +54,15 @@ public class DashboardController {
         @RequestParam(required = false) String metric
     ) {
         return ApiResponse.success(dashboardMockService.getStationRanking(metric));
+    }
+
+    @GetMapping("/overview")
+    public ApiResponse<Map<String, Object>> getOverview() {
+        return ApiResponse.success(dashboardMockService.getOverview());
+    }
+
+    @GetMapping("/vpp-node-status")
+    public ApiResponse<Map<String, Object>> getVppNodeStatus() {
+        return ApiResponse.success(dashboardMapDataService.getVppNodeStatus());
     }
 }
