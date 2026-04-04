@@ -1,12 +1,12 @@
 package cn.techstar.pvms.backend.module.strategy.service;
 
-import cn.techstar.pvms.backend.module.forecast.repository.ForecastPredictionRepository;
+import cn.techstar.pvms.backend.module.forecast.repository.ForecastPredictionMapper;
 import cn.techstar.pvms.backend.module.forecast.service.ForecastMetricsCalculator;
 import cn.techstar.pvms.backend.module.forecast.service.ForecastSeriesService;
-import cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveCurveRepository;
+import cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveCurveMapper;
 import cn.techstar.pvms.backend.module.strategy.model.StrategyRequest;
-import cn.techstar.pvms.backend.module.strategy.repository.StrategyMetaRepository;
-import cn.techstar.pvms.backend.module.strategy.repository.StrategyPriceRepository;
+import cn.techstar.pvms.backend.module.strategy.repository.StrategyMetaMapper;
+import cn.techstar.pvms.backend.module.strategy.repository.StrategyPriceMapper;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -20,45 +20,45 @@ import java.util.Objects;
 @Service
 public class StrategySimulationService {
 
-    private final StrategyMetaRepository metaRepository;
-    private final StrategyPriceRepository priceRepository;
-    private final StationArchiveCurveRepository stationArchiveCurveRepository;
-    private final ForecastPredictionRepository forecastPredictionRepository;
+    private final StrategyMetaMapper metaMapper;
+    private final StrategyPriceMapper priceMapper;
+    private final StationArchiveCurveMapper stationArchiveCurveMapper;
+    private final ForecastPredictionMapper forecastPredictionMapper;
     private final ForecastSeriesService forecastSeriesService;
     private final ForecastMetricsCalculator metricsCalculator;
 
     public StrategySimulationService(
-        StrategyMetaRepository metaRepository,
-        StrategyPriceRepository priceRepository,
-        StationArchiveCurveRepository stationArchiveCurveRepository,
-        ForecastPredictionRepository forecastPredictionRepository,
+        StrategyMetaMapper metaMapper,
+        StrategyPriceMapper priceMapper,
+        StationArchiveCurveMapper stationArchiveCurveMapper,
+        ForecastPredictionMapper forecastPredictionMapper,
         ForecastSeriesService forecastSeriesService,
         ForecastMetricsCalculator metricsCalculator
     ) {
-        this.metaRepository = metaRepository;
-        this.priceRepository = priceRepository;
-        this.stationArchiveCurveRepository = stationArchiveCurveRepository;
-        this.forecastPredictionRepository = forecastPredictionRepository;
+        this.metaMapper = metaMapper;
+        this.priceMapper = priceMapper;
+        this.stationArchiveCurveMapper = stationArchiveCurveMapper;
+        this.forecastPredictionMapper = forecastPredictionMapper;
         this.forecastSeriesService = forecastSeriesService;
         this.metricsCalculator = metricsCalculator;
     }
 
     public SimulationResult simulate(StrategyRequest request) {
-        StrategyMetaRepository.StationRow station = resolveStation(request.stationId());
+        StrategyMetaMapper.StationRow station = resolveStation(request.stationId());
         LocalDate bizDate = resolveBizDate(request);
-        List<StationArchiveCurveRepository.CurveRow> curveRows =
-            stationArchiveCurveRepository.findByStationIdAndDate(station.id(), bizDate);
-        Map<Integer, ForecastPredictionRepository.PredictionRow> predictionsBySlot =
-            forecastPredictionRepository.findByDate(bizDate).stream()
+        List<StationArchiveCurveMapper.CurveRow> curveRows =
+            stationArchiveCurveMapper.findByStationIdAndDate(station.id(), bizDate);
+        Map<Integer, ForecastPredictionMapper.PredictionRow> predictionsBySlot =
+            forecastPredictionMapper.findByDate(bizDate).stream()
                 .filter(item -> Objects.equals(item.stationId(), station.id()))
                 .filter(item -> Objects.equals(item.forecastType(), "day-ahead"))
                 .collect(java.util.stream.Collectors.toMap(
-                    ForecastPredictionRepository.PredictionRow::timeSlot,
+                    ForecastPredictionMapper.PredictionRow::timeSlot,
                     item -> item,
                     (left, right) -> left,
                     LinkedHashMap::new
                 ));
-        Map<Integer, StrategyPriceRepository.PricePeriodRow> priceBySlot = buildPriceBySlot(station.id());
+        Map<Integer, StrategyPriceMapper.PricePeriodRow> priceBySlot = buildPriceBySlot(station.id());
 
         int startSlot = StrategySupport.slotOf(request.startTime());
         int endSlotExclusive = Math.min(96, Math.max(startSlot + 1, StrategySupport.endSlotExclusive(request.endTime())));
@@ -75,18 +75,18 @@ public class StrategySimulationService {
         List<Double> predictedSeries = new ArrayList<>();
         List<Map<String, Object>> timeline = new ArrayList<>();
 
-        Map<Integer, StationArchiveCurveRepository.CurveRow> curveBySlot = curveRows.stream()
+        Map<Integer, StationArchiveCurveMapper.CurveRow> curveBySlot = curveRows.stream()
             .collect(java.util.stream.Collectors.toMap(
-                StationArchiveCurveRepository.CurveRow::timeSlot,
+                StationArchiveCurveMapper.CurveRow::timeSlot,
                 item -> item,
                 (left, right) -> left,
                 LinkedHashMap::new
             ));
 
         for (int slot = startSlot; slot < endSlotExclusive; slot += 1) {
-            StationArchiveCurveRepository.CurveRow curve = curveBySlot.get(slot);
-            ForecastPredictionRepository.PredictionRow prediction = predictionsBySlot.get(slot);
-            StrategyPriceRepository.PricePeriodRow price = priceBySlot.get(slot);
+            StationArchiveCurveMapper.CurveRow curve = curveBySlot.get(slot);
+            ForecastPredictionMapper.PredictionRow prediction = predictionsBySlot.get(slot);
+            StrategyPriceMapper.PricePeriodRow price = priceBySlot.get(slot);
             double loadKw = curve == null ? station.capacityKwp() * 0.42 : curve.loadKw();
             double actualPvKw = curve == null ? station.capacityKwp() * 0.33 : curve.pvOutputKw();
             double predictedKw = prediction == null ? actualPvKw : prediction.predictedPowerKw();
@@ -192,11 +192,11 @@ public class StrategySimulationService {
         );
     }
 
-    private StrategyMetaRepository.StationRow resolveStation(String stationId) {
-        return metaRepository.findStations().stream()
+    private StrategyMetaMapper.StationRow resolveStation(String stationId) {
+        return metaMapper.findStations().stream()
             .filter(item -> Objects.equals(item.id(), stationId))
             .findFirst()
-            .orElse(metaRepository.findStations().stream().min(Comparator.comparingInt(StrategyMetaRepository.StationRow::sortIndex)).orElseThrow());
+            .orElse(metaMapper.findStations().stream().min(Comparator.comparingInt(StrategyMetaMapper.StationRow::sortIndex)).orElseThrow());
     }
 
     private LocalDate resolveBizDate(StrategyRequest request) {
@@ -209,9 +209,9 @@ public class StrategySimulationService {
         return StrategySupport.DEFAULT_BIZ_DATE;
     }
 
-    private Map<Integer, StrategyPriceRepository.PricePeriodRow> buildPriceBySlot(String stationId) {
-        Map<Integer, StrategyPriceRepository.PricePeriodRow> mapping = new LinkedHashMap<>();
-        priceRepository.findByStationId(stationId).forEach(period -> {
+    private Map<Integer, StrategyPriceMapper.PricePeriodRow> buildPriceBySlot(String stationId) {
+        Map<Integer, StrategyPriceMapper.PricePeriodRow> mapping = new LinkedHashMap<>();
+        priceMapper.findByStationId(stationId).forEach(period -> {
             for (int slot = period.startSlot(); slot <= period.endSlot() && slot < 96; slot += 1) {
                 mapping.put(slot, period);
             }

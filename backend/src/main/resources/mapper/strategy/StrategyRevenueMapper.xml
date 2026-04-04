@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.techstar.pvms.backend.module.strategy.repository.StrategyRevenueMapper">
+
+<select id="findAll" resultType="cn.techstar.pvms.backend.module.strategy.repository.StrategyRevenueMapper$RevenueDailyRow">
+        SELECT rd.strategy_id, rd.biz_date, rd.estimated_revenue_cny, rd.actual_revenue_cny,
+               rd.peak_saving_cny, rd.response_reward_cny, rd.penalty_cny,
+               sg.name AS strategy_name, sg.type, sg.status,
+               sg.station_id, st.name AS station_name,
+               sg.company_id, co.name AS company_name, co.region
+        FROM sg_revenue_daily rd
+        JOIN sg_strategy sg ON sg.id = rd.strategy_id
+        JOIN sa_station st ON st.id = sg.station_id
+        JOIN sa_company co ON co.id = sg.company_id
+        ORDER BY rd.biz_date DESC, sg.updated_at DESC
+    </select>
+
+    <select id="findByDateRange" resultType="cn.techstar.pvms.backend.module.strategy.repository.StrategyRevenueMapper$RevenueDailyRow">
+        SELECT rd.strategy_id, rd.biz_date, rd.estimated_revenue_cny, rd.actual_revenue_cny,
+               rd.peak_saving_cny, rd.response_reward_cny, rd.penalty_cny,
+               sg.name AS strategy_name, sg.type, sg.status,
+               sg.station_id, st.name AS station_name,
+               sg.company_id, co.name AS company_name, co.region
+        FROM sg_revenue_daily rd
+        JOIN sg_strategy sg ON sg.id = rd.strategy_id
+        JOIN sa_station st ON st.id = sg.station_id
+        JOIN sa_company co ON co.id = sg.company_id
+        WHERE rd.biz_date BETWEEN #{startDate} AND #{endDate}
+        ORDER BY rd.biz_date DESC, sg.updated_at DESC
+    </select>
+
+    <insert id="insertRevenueDaily">
+        INSERT INTO sg_revenue_daily (strategy_id, biz_date, estimated_revenue_cny, actual_revenue_cny,
+                                      peak_saving_cny, response_reward_cny, penalty_cny)
+        VALUES (#{row.strategyId}, #{row.bizDate}, #{row.estimatedRevenueCny}, #{row.actualRevenueCny},
+                #{row.peakSavingCny}, #{row.responseRewardCny}, #{row.penaltyCny})
+    </insert>
+
+</mapper>

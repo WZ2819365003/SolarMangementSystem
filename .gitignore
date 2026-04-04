@@ -38,4 +38,4 @@ temp/
 .trae/
 
 # HVPP test files
-HVPP/
+HVPP/backend/target/

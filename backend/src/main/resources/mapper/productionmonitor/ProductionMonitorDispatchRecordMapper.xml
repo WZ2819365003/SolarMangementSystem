@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.techstar.pvms.backend.module.productionmonitor.repository.ProductionMonitorDispatchRecordMapper">
+
+    <select id="findByResourceUnitId" resultType="cn.techstar.pvms.backend.module.productionmonitor.repository.ProductionMonitorDispatchRecordMapper$DispatchRecordRow">
+        SELECT
+            id,
+            resource_unit_id,
+            issued_at,
+            command_type,
+            target_power_mw,
+            actual_power_mw,
+            response_seconds,
+            status,
+            deviation_reason
+        FROM pm_dispatch_record
+        WHERE resource_unit_id = #{resourceUnitId}
+        ORDER BY issued_at
+    </select>
+
+</mapper>

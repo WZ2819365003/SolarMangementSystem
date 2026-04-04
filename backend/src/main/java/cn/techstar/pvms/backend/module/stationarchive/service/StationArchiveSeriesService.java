@@ -1,6 +1,6 @@
 package cn.techstar.pvms.backend.module.stationarchive.service;
 
-import cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveCurveRepository;
+import cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveCurveMapper;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -10,15 +10,15 @@ import java.util.List;
 @Component
 public class StationArchiveSeriesService {
 
-    public SeriesGrid build(List<StationArchiveCurveRepository.CurveRow> rows, String granularity) {
-        List<StationArchiveCurveRepository.CurveRow> sortedRows = rows.stream()
-            .sorted(Comparator.comparingInt(StationArchiveCurveRepository.CurveRow::timeSlot))
+    public SeriesGrid build(List<StationArchiveCurveMapper.CurveRow> rows, String granularity) {
+        List<StationArchiveCurveMapper.CurveRow> sortedRows = rows.stream()
+            .sorted(Comparator.comparingInt(StationArchiveCurveMapper.CurveRow::timeSlot))
             .toList();
 
-        List<Double> loadKw = sortedRows.stream().map(StationArchiveCurveRepository.CurveRow::loadKw).toList();
-        List<Double> pvOutputKw = sortedRows.stream().map(StationArchiveCurveRepository.CurveRow::pvOutputKw).toList();
-        List<Double> forecastDayAheadKw = sortedRows.stream().map(StationArchiveCurveRepository.CurveRow::forecastDayAheadKw).toList();
-        List<Double> forecastUltraShortKw = sortedRows.stream().map(StationArchiveCurveRepository.CurveRow::forecastUltraShortKw).toList();
+        List<Double> loadKw = sortedRows.stream().map(StationArchiveCurveMapper.CurveRow::loadKw).toList();
+        List<Double> pvOutputKw = sortedRows.stream().map(StationArchiveCurveMapper.CurveRow::pvOutputKw).toList();
+        List<Double> forecastDayAheadKw = sortedRows.stream().map(StationArchiveCurveMapper.CurveRow::forecastDayAheadKw).toList();
+        List<Double> forecastUltraShortKw = sortedRows.stream().map(StationArchiveCurveMapper.CurveRow::forecastUltraShortKw).toList();
         String normalizedGranularity = normalizeGranularity(granularity);
 
         if ("1min".equals(normalizedGranularity)) {

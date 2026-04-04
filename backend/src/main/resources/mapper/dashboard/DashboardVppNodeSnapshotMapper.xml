@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.techstar.pvms.backend.module.dashboard.repository.DashboardVppNodeSnapshotMapper">
+
+    <select id="findDefault" resultType="cn.techstar.pvms.backend.module.dashboard.repository.DashboardVppNodeSnapshotMapper$VppNodeSnapshotRow">
+        SELECT
+            node_id,
+            total_capacity_mw,
+            adjustable_min_mw,
+            adjustable_max_mw,
+            last_heartbeat
+        FROM dashboard_vpp_node_snapshot
+        ORDER BY node_id
+        LIMIT 1
+    </select>
+
+</mapper>

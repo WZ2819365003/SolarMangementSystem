@@ -1,11 +1,11 @@
 package cn.techstar.pvms.backend.module.stationarchive.service;
 
-import cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveCompanyRepository;
-import cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveCurveRepository;
-import cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveInverterAlarmRepository;
-import cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveInverterRepository;
-import cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveStationRepository;
-import cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveStrategyRepository;
+import cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveCompanyMapper;
+import cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveCurveMapper;
+import cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveInverterAlarmMapper;
+import cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveInverterMapper;
+import cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveStationMapper;
+import cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveStrategyMapper;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -42,36 +42,36 @@ public class StationArchiveDataService {
         "offline", 76.0
     );
 
-    private final StationArchiveCompanyRepository companyRepository;
-    private final StationArchiveStationRepository stationRepository;
-    private final StationArchiveCurveRepository curveRepository;
-    private final StationArchiveInverterRepository inverterRepository;
-    private final StationArchiveStrategyRepository strategyRepository;
-    private final StationArchiveInverterAlarmRepository inverterAlarmRepository;
+    private final StationArchiveCompanyMapper companyMapper;
+    private final StationArchiveStationMapper stationMapper;
+    private final StationArchiveCurveMapper curveMapper;
+    private final StationArchiveInverterMapper inverterMapper;
+    private final StationArchiveStrategyMapper strategyMapper;
+    private final StationArchiveInverterAlarmMapper inverterAlarmMapper;
     private final StationArchiveSeriesService seriesService;
 
     public StationArchiveDataService(
-        StationArchiveCompanyRepository companyRepository,
-        StationArchiveStationRepository stationRepository,
-        StationArchiveCurveRepository curveRepository,
-        StationArchiveInverterRepository inverterRepository,
-        StationArchiveStrategyRepository strategyRepository,
-        StationArchiveInverterAlarmRepository inverterAlarmRepository,
+        StationArchiveCompanyMapper companyMapper,
+        StationArchiveStationMapper stationMapper,
+        StationArchiveCurveMapper curveMapper,
+        StationArchiveInverterMapper inverterMapper,
+        StationArchiveStrategyMapper strategyMapper,
+        StationArchiveInverterAlarmMapper inverterAlarmMapper,
         StationArchiveSeriesService seriesService
     ) {
-        this.companyRepository = companyRepository;
-        this.stationRepository = stationRepository;
-        this.curveRepository = curveRepository;
-        this.inverterRepository = inverterRepository;
-        this.strategyRepository = strategyRepository;
-        this.inverterAlarmRepository = inverterAlarmRepository;
+        this.companyMapper = companyMapper;
+        this.stationMapper = stationMapper;
+        this.curveMapper = curveMapper;
+        this.inverterMapper = inverterMapper;
+        this.strategyMapper = strategyMapper;
+        this.inverterAlarmMapper = inverterAlarmMapper;
         this.seriesService = seriesService;
     }
 
     public Map<String, Object> getArchiveList(String keyword, String gridStatus) {
-        List<StationArchiveStationRepository.StationRow> stations = stationRepository.findAll();
-        Map<String, List<StationArchiveInverterRepository.InverterRow>> invertersByStation = inverterRepository.findAll().stream()
-            .collect(Collectors.groupingBy(StationArchiveInverterRepository.InverterRow::stationId, LinkedHashMap::new, Collectors.toList()));
+        List<StationArchiveStationMapper.StationRow> stations = stationMapper.findAll();
+        Map<String, List<StationArchiveInverterMapper.InverterRow>> invertersByStation = inverterMapper.findAll().stream()
+            .collect(Collectors.groupingBy(StationArchiveInverterMapper.InverterRow::stationId, LinkedHashMap::new, Collectors.toList()));
 
         return orderedMap(
             "items",
@@ -96,15 +96,15 @@ public class StationArchiveDataService {
     }
 
     public Map<String, Object> getStationTree(String status) {
-        List<StationArchiveCompanyRepository.CompanyRow> companies = companyRepository.findAll();
-        List<StationArchiveStationRepository.StationRow> stations = stationRepository.findAll();
-        Map<String, List<StationArchiveCurveRepository.CurveRow>> curvesByStation = curveRepository.findByDate(DEFAULT_BIZ_DATE).stream()
-            .collect(Collectors.groupingBy(StationArchiveCurveRepository.CurveRow::stationId, LinkedHashMap::new, Collectors.toList()));
-        Map<String, List<StationArchiveInverterRepository.InverterRow>> invertersByStation = inverterRepository.findAll().stream()
-            .collect(Collectors.groupingBy(StationArchiveInverterRepository.InverterRow::stationId, LinkedHashMap::new, Collectors.toList()));
+        List<StationArchiveCompanyMapper.CompanyRow> companies = companyMapper.findAll();
+        List<StationArchiveStationMapper.StationRow> stations = stationMapper.findAll();
+        Map<String, List<StationArchiveCurveMapper.CurveRow>> curvesByStation = curveMapper.findByDate(DEFAULT_BIZ_DATE).stream()
+            .collect(Collectors.groupingBy(StationArchiveCurveMapper.CurveRow::stationId, LinkedHashMap::new, Collectors.toList()));
+        Map<String, List<StationArchiveInverterMapper.InverterRow>> invertersByStation = inverterMapper.findAll().stream()
+            .collect(Collectors.groupingBy(StationArchiveInverterMapper.InverterRow::stationId, LinkedHashMap::new, Collectors.toList()));
 
         List<Map<String, Object>> tree = new ArrayList<>();
-        for (StationArchiveCompanyRepository.CompanyRow company : companies) {
+        for (StationArchiveCompanyMapper.CompanyRow company : companies) {
             List<Map<String, Object>> children = stations.stream()
                 .filter(station -> Objects.equals(station.companyId(), company.id()))
                 .filter(station -> status == null || status.isBlank() || Objects.equals(station.status(), status))
@@ -130,24 +130,24 @@ public class StationArchiveDataService {
     }
 
     public Map<String, Object> getCompanyOverview(String companyId) {
-        List<StationArchiveCompanyRepository.CompanyRow> companies = companyRepository.findAll();
-        List<StationArchiveStationRepository.StationRow> stations = stationRepository.findAll();
-        StationArchiveCompanyRepository.CompanyRow company = companies.stream()
+        List<StationArchiveCompanyMapper.CompanyRow> companies = companyMapper.findAll();
+        List<StationArchiveStationMapper.StationRow> stations = stationMapper.findAll();
+        StationArchiveCompanyMapper.CompanyRow company = companies.stream()
             .filter(item -> Objects.equals(item.id(), companyId))
             .findFirst()
             .orElse(companies.getFirst());
-        List<StationArchiveStationRepository.StationRow> companyStations = stations.stream()
+        List<StationArchiveStationMapper.StationRow> companyStations = stations.stream()
             .filter(item -> Objects.equals(item.companyId(), company.id()))
-            .sorted(Comparator.comparingInt(StationArchiveStationRepository.StationRow::sortIndex))
+            .sorted(Comparator.comparingInt(StationArchiveStationMapper.StationRow::sortIndex))
             .toList();
-        Map<String, List<StationArchiveCurveRepository.CurveRow>> curvesByStation = curveRepository.findByDate(DEFAULT_BIZ_DATE).stream()
-            .collect(Collectors.groupingBy(StationArchiveCurveRepository.CurveRow::stationId, LinkedHashMap::new, Collectors.toList()));
+        Map<String, List<StationArchiveCurveMapper.CurveRow>> curvesByStation = curveMapper.findByDate(DEFAULT_BIZ_DATE).stream()
+            .collect(Collectors.groupingBy(StationArchiveCurveMapper.CurveRow::stationId, LinkedHashMap::new, Collectors.toList()));
 
         List<Map<String, Object>> stationRows = companyStations.stream()
             .map(station -> buildCompanyStationRow(station, curvesByStation.getOrDefault(station.id(), List.of())))
             .toList();
 
-        double totalCapacityMw = round(companyStations.stream().mapToDouble(StationArchiveStationRepository.StationRow::capacityKwp).sum() / 1000.0, 1);
+        double totalCapacityMw = round(companyStations.stream().mapToDouble(StationArchiveStationMapper.StationRow::capacityKwp).sum() / 1000.0, 1);
         double realtimePowerMw = round(stationRows.stream().mapToDouble(item -> ((Number) item.get("realtimePowerKw")).doubleValue()).sum() / 1000.0, 2);
         double totalAdjustableKw = stationRows.stream().mapToDouble(item -> ((Number) item.get("adjustableKw")).doubleValue()).sum();
         double todayEnergyMwh = round(companyStations.stream()
@@ -181,12 +181,12 @@ public class StationArchiveDataService {
     }
 
     public Map<String, Object> getResourceOverview(String stationId) {
-        StationArchiveStationRepository.StationRow station = resolveStation(stationId);
+        StationArchiveStationMapper.StationRow station = resolveStation(stationId);
         StationArchiveSeriesService.SeriesGrid grid = resolveSeries(station.id(), DEFAULT_BIZ_DATE, "15min");
-        List<StationArchiveInverterRepository.InverterRow> inverters = inverterRepository.findByStationId(station.id());
+        List<StationArchiveInverterMapper.InverterRow> inverters = inverterMapper.findByStationId(station.id());
         Map<String, Object> stationRow = buildCompanyStationRow(
             station,
-            curveRepository.findByStationIdAndDate(station.id(), DEFAULT_BIZ_DATE)
+            curveMapper.findByStationIdAndDate(station.id(), DEFAULT_BIZ_DATE)
         );
         double realtimePowerKw = ((Number) stationRow.get("realtimePowerKw")).doubleValue();
         double loadKw = ((Number) stationRow.get("loadKw")).doubleValue();
@@ -225,9 +225,9 @@ public class StationArchiveDataService {
     }
 
     public Map<String, Object> getStationRealtime(String stationId, String metric, LocalDate bizDate, String granularity) {
-        StationArchiveStationRepository.StationRow station = resolveStation(stationId);
+        StationArchiveStationMapper.StationRow station = resolveStation(stationId);
         StationArchiveSeriesService.SeriesGrid grid = resolveSeries(station.id(), resolveBizDate(bizDate), granularity);
-        List<StationArchiveInverterRepository.InverterRow> inverters = inverterRepository.findByStationId(station.id());
+        List<StationArchiveInverterMapper.InverterRow> inverters = inverterMapper.findByStationId(station.id());
         String resolvedMetric = metric == null || metric.isBlank() ? "adjustable" : metric;
 
         return switch (resolvedMetric) {
@@ -239,7 +239,7 @@ public class StationArchiveDataService {
     }
 
     public Map<String, Object> getStationAdjustable(String stationId) {
-        StationArchiveStationRepository.StationRow station = resolveStation(stationId);
+        StationArchiveStationMapper.StationRow station = resolveStation(stationId);
         StationArchiveSeriesService.SeriesGrid grid = resolveSeries(station.id(), DEFAULT_BIZ_DATE, "15min");
         List<Double> adjustableSeries = subtract(grid.loadKw(), grid.pvOutputKw());
         int currentIndex = seriesService.indexOfTime(grid, CURRENT_TIME_LABEL);
@@ -259,7 +259,7 @@ public class StationArchiveDataService {
     }
 
     public Map<String, Object> getStationStrategy(String stationId) {
-        StationArchiveStrategyRepository.StrategyRow strategy = resolveStrategy(stationId);
+        StationArchiveStrategyMapper.StrategyRow strategy = resolveStrategy(stationId);
         return orderedMap(
             "currentStrategy", orderedMap(
                 "name", strategy.name(),
@@ -275,16 +275,16 @@ public class StationArchiveDataService {
     }
 
     public Map<String, Object> getInverterRealtime(String inverterId) {
-        List<StationArchiveInverterRepository.InverterRow> allInverters = inverterRepository.findAll();
-        StationArchiveInverterRepository.InverterRow inverter = allInverters.stream()
+        List<StationArchiveInverterMapper.InverterRow> allInverters = inverterMapper.findAll();
+        StationArchiveInverterMapper.InverterRow inverter = allInverters.stream()
             .filter(item -> Objects.equals(item.id(), inverterId))
             .findFirst()
             .orElse(allInverters.getFirst());
-        StationArchiveStationRepository.StationRow station = resolveStation(inverter.stationId());
+        StationArchiveStationMapper.StationRow station = resolveStation(inverter.stationId());
         StationArchiveSeriesService.SeriesGrid grid = resolveSeries(station.id(), DEFAULT_BIZ_DATE, "15min");
-        List<StationArchiveInverterRepository.InverterRow> stationInverters = allInverters.stream()
+        List<StationArchiveInverterMapper.InverterRow> stationInverters = allInverters.stream()
             .filter(item -> Objects.equals(item.stationId(), station.id()))
-            .sorted(Comparator.comparingInt(StationArchiveInverterRepository.InverterRow::sortIndex))
+            .sorted(Comparator.comparingInt(StationArchiveInverterMapper.InverterRow::sortIndex))
             .toList();
         List<InverterSeries> inverterSeries = buildInverterPowerSeries(stationInverters, grid.pvOutputKw());
         InverterSeries currentSeries = inverterSeries.stream()
@@ -314,7 +314,7 @@ public class StationArchiveDataService {
                 "totalPanels", inverter.stringCount() * inverter.panelsPerString(),
                 "strings", buildStringTopology(inverter, currentPowerKw)
             ),
-            "alarms", inverterAlarmRepository.findByInverterId(inverter.id()).stream()
+            "alarms", inverterAlarmMapper.findByInverterId(inverter.id()).stream()
                 .map(alarm -> orderedMap(
                     "time", formatDateTime(alarm.eventTime()),
                     "type", alarm.type(),
@@ -340,9 +340,9 @@ public class StationArchiveDataService {
     }
 
     private Map<String, Object> mapTreeStationNode(
-        StationArchiveStationRepository.StationRow station,
-        StationArchiveCurveRepository.CurveRow currentCurve,
-        List<StationArchiveInverterRepository.InverterRow> inverters
+        StationArchiveStationMapper.StationRow station,
+        StationArchiveCurveMapper.CurveRow currentCurve,
+        List<StationArchiveInverterMapper.InverterRow> inverters
     ) {
         double loadKw = currentCurve == null ? station.loadBaseKw() : currentCurve.loadKw();
         double pvOutputKw = currentCurve == null ? 0 : currentCurve.pvOutputKw();
@@ -367,7 +367,7 @@ public class StationArchiveDataService {
     }
 
     private List<Map<String, Object>> buildTreeInverters(
-        List<StationArchiveInverterRepository.InverterRow> inverters,
+        List<StationArchiveInverterMapper.InverterRow> inverters,
         double stationPvOutputKw
     ) {
         List<InverterSeries> series = buildInverterPowerSeries(inverters, List.of(stationPvOutputKw));
@@ -386,10 +386,10 @@ public class StationArchiveDataService {
     }
 
     private Map<String, Object> buildCompanyStationRow(
-        StationArchiveStationRepository.StationRow station,
-        List<StationArchiveCurveRepository.CurveRow> curveRows
+        StationArchiveStationMapper.StationRow station,
+        List<StationArchiveCurveMapper.CurveRow> curveRows
     ) {
-        StationArchiveCurveRepository.CurveRow currentPoint = currentPoint(curveRows);
+        StationArchiveCurveMapper.CurveRow currentPoint = currentPoint(curveRows);
         double loadKw = currentPoint == null ? station.loadBaseKw() : currentPoint.loadKw();
         double realtimePowerKw = currentPoint == null ? 0 : currentPoint.pvOutputKw();
         return orderedMap(
@@ -404,7 +404,7 @@ public class StationArchiveDataService {
     }
 
     private Map<String, Object> buildStationAdjustablePayload(
-        StationArchiveStationRepository.StationRow station,
+        StationArchiveStationMapper.StationRow station,
         StationArchiveSeriesService.SeriesGrid grid
     ) {
         List<Double> adjustableSeries = subtract(grid.loadKw(), grid.pvOutputKw());
@@ -469,9 +469,9 @@ public class StationArchiveDataService {
     }
 
     private Map<String, Object> buildStationPvOutputPayload(
-        StationArchiveStationRepository.StationRow station,
+        StationArchiveStationMapper.StationRow station,
         StationArchiveSeriesService.SeriesGrid grid,
-        List<StationArchiveInverterRepository.InverterRow> inverters
+        List<StationArchiveInverterMapper.InverterRow> inverters
     ) {
         List<InverterSeries> inverterSeries = buildInverterPowerSeries(inverters, grid.pvOutputKw());
         List<Map<String, Object>> series = new ArrayList<>();
@@ -481,7 +481,7 @@ public class StationArchiveDataService {
     }
 
     private Map<String, Object> buildStationLoadPayload(
-        StationArchiveStationRepository.StationRow station,
+        StationArchiveStationMapper.StationRow station,
         StationArchiveSeriesService.SeriesGrid grid
     ) {
         List<Double> acData = new ArrayList<>(grid.loadKw().size());
@@ -566,7 +566,7 @@ public class StationArchiveDataService {
             .orElse(0);
     }
 
-    private List<Map<String, Object>> buildExecutionLogs(StationArchiveStrategyRepository.StrategyRow strategy) {
+    private List<Map<String, Object>> buildExecutionLogs(StationArchiveStrategyMapper.StrategyRow strategy) {
         if (Objects.equals(strategy.status(), "离线")) {
             return List.of(
                 orderedMap("time", "10:30", "action", "尝试通信恢复", "result", "失败", "deviationRate", 0),
@@ -601,7 +601,7 @@ public class StationArchiveDataService {
     }
 
     private List<Map<String, Object>> buildStringTopology(
-        StationArchiveInverterRepository.InverterRow inverter,
+        StationArchiveInverterMapper.InverterRow inverter,
         double currentPowerKw
     ) {
         List<Map<String, Object>> strings = new ArrayList<>();
@@ -626,7 +626,7 @@ public class StationArchiveDataService {
     }
 
     private List<InverterSeries> buildInverterPowerSeries(
-        List<StationArchiveInverterRepository.InverterRow> inverters,
+        List<StationArchiveInverterMapper.InverterRow> inverters,
         List<Double> stationOutputKw
     ) {
         if (inverters.isEmpty()) {
@@ -651,16 +651,16 @@ public class StationArchiveDataService {
         return result;
     }
 
-    private StationArchiveStationRepository.StationRow resolveStation(String stationId) {
-        List<StationArchiveStationRepository.StationRow> stations = stationRepository.findAll();
+    private StationArchiveStationMapper.StationRow resolveStation(String stationId) {
+        List<StationArchiveStationMapper.StationRow> stations = stationMapper.findAll();
         return stations.stream()
             .filter(item -> Objects.equals(item.id(), stationId))
             .findFirst()
             .orElse(stations.getFirst());
     }
 
-    private StationArchiveStrategyRepository.StrategyRow resolveStrategy(String stationId) {
-        List<StationArchiveStrategyRepository.StrategyRow> strategies = strategyRepository.findAll();
+    private StationArchiveStrategyMapper.StrategyRow resolveStrategy(String stationId) {
+        List<StationArchiveStrategyMapper.StrategyRow> strategies = strategyMapper.findAll();
         return strategies.stream()
             .filter(item -> Objects.equals(item.stationId(), stationId))
             .findFirst()
@@ -669,21 +669,21 @@ public class StationArchiveDataService {
 
     private StationArchiveSeriesService.SeriesGrid resolveSeries(String stationId, LocalDate bizDate, String granularity) {
         LocalDate resolvedDate = resolveBizDate(bizDate);
-        List<StationArchiveCurveRepository.CurveRow> rows = curveRepository.findByStationIdAndDate(stationId, resolvedDate);
+        List<StationArchiveCurveMapper.CurveRow> rows = curveMapper.findByStationIdAndDate(stationId, resolvedDate);
         if (rows.isEmpty() && !Objects.equals(resolvedDate, DEFAULT_BIZ_DATE)) {
-            rows = curveRepository.findByStationIdAndDate(stationId, DEFAULT_BIZ_DATE);
+            rows = curveMapper.findByStationIdAndDate(stationId, DEFAULT_BIZ_DATE);
         }
         return seriesService.build(rows, granularity);
     }
 
-    private StationArchiveCurveRepository.CurveRow currentPoint(List<StationArchiveCurveRepository.CurveRow> curveRows) {
+    private StationArchiveCurveMapper.CurveRow currentPoint(List<StationArchiveCurveMapper.CurveRow> curveRows) {
         return curveRows.stream()
             .filter(item -> item.timeSlot() == 56)
             .findFirst()
             .orElse(curveRows.isEmpty() ? null : curveRows.get(Math.min(curveRows.size() - 1, 56)));
     }
 
-    private boolean matchesKeyword(StationArchiveStationRepository.StationRow station, String keyword) {
+    private boolean matchesKeyword(StationArchiveStationMapper.StationRow station, String keyword) {
         if (keyword == null || keyword.isBlank()) {
             return true;
         }
@@ -720,7 +720,7 @@ public class StationArchiveDataService {
         return round(deviations.stream().mapToDouble(Double::doubleValue).average().orElse(0), 1);
     }
 
-    private double resolveInverterEfficiency(StationArchiveInverterRepository.InverterRow inverter) {
+    private double resolveInverterEfficiency(StationArchiveInverterMapper.InverterRow inverter) {
         return switch (inverter.status()) {
             case "warning" -> 96.4;
             case "fault" -> 89.2;
@@ -780,7 +780,7 @@ public class StationArchiveDataService {
     }
 
     private record InverterSeries(
-        StationArchiveInverterRepository.InverterRow inverter,
+        StationArchiveInverterMapper.InverterRow inverter,
         List<Double> data
     ) {
     }

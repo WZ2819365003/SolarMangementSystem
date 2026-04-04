@@ -1,11 +1,11 @@
 package cn.techstar.pvms.backend.module.strategy.service;
 
 import cn.techstar.pvms.backend.module.strategy.model.StrategyRequest;
-import cn.techstar.pvms.backend.module.strategy.repository.StrategyMetaRepository;
-import cn.techstar.pvms.backend.module.strategy.repository.StrategyPriceRepository;
-import cn.techstar.pvms.backend.module.strategy.repository.StrategyRecordRepository;
-import cn.techstar.pvms.backend.module.strategy.repository.StrategyRevenueRepository;
-import cn.techstar.pvms.backend.module.strategy.repository.StrategyTreeRepository;
+import cn.techstar.pvms.backend.module.strategy.repository.StrategyMetaMapper;
+import cn.techstar.pvms.backend.module.strategy.repository.StrategyPriceMapper;
+import cn.techstar.pvms.backend.module.strategy.repository.StrategyRecordMapper;
+import cn.techstar.pvms.backend.module.strategy.repository.StrategyRevenueMapper;
+import cn.techstar.pvms.backend.module.strategy.repository.StrategyTreeMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,32 +22,32 @@ import java.util.stream.Collectors;
 @Service
 public class StrategyDataService {
 
-    private final StrategyMetaRepository metaRepository;
-    private final StrategyTreeRepository treeRepository;
-    private final StrategyRecordRepository recordRepository;
-    private final StrategyPriceRepository priceRepository;
-    private final StrategyRevenueRepository revenueRepository;
+    private final StrategyMetaMapper metaMapper;
+    private final StrategyTreeMapper treeMapper;
+    private final StrategyRecordMapper recordMapper;
+    private final StrategyPriceMapper priceMapper;
+    private final StrategyRevenueMapper revenueMapper;
     private final StrategySimulationService simulationService;
 
     public StrategyDataService(
-        StrategyMetaRepository metaRepository,
-        StrategyTreeRepository treeRepository,
-        StrategyRecordRepository recordRepository,
-        StrategyPriceRepository priceRepository,
-        StrategyRevenueRepository revenueRepository,
+        StrategyMetaMapper metaMapper,
+        StrategyTreeMapper treeMapper,
+        StrategyRecordMapper recordMapper,
+        StrategyPriceMapper priceMapper,
+        StrategyRevenueMapper revenueMapper,
         StrategySimulationService simulationService
     ) {
-        this.metaRepository = metaRepository;
-        this.treeRepository = treeRepository;
-        this.recordRepository = recordRepository;
-        this.priceRepository = priceRepository;
-        this.revenueRepository = revenueRepository;
+        this.metaMapper = metaMapper;
+        this.treeMapper = treeMapper;
+        this.recordMapper = recordMapper;
+        this.priceMapper = priceMapper;
+        this.revenueMapper = revenueMapper;
         this.simulationService = simulationService;
     }
 
     public Map<String, Object> getMeta() {
-        List<StrategyMetaRepository.CompanyRow> companies = metaRepository.findCompanies();
-        List<StrategyMetaRepository.StationRow> stations = metaRepository.findStations();
+        List<StrategyMetaMapper.CompanyRow> companies = metaMapper.findCompanies();
+        List<StrategyMetaMapper.StationRow> stations = metaMapper.findStations();
 
         return StrategySupport.orderedMap(
             "defaultStationId", stations.isEmpty() ? "" : stations.getFirst().id(),
@@ -84,13 +84,13 @@ public class StrategyDataService {
                     );
                 })
                 .toList(),
-            "pricePeriods", priceRepository.findTemplate().stream().map(this::mapPricePeriod).toList()
+            "pricePeriods", priceMapper.findTemplate().stream().map(this::mapPricePeriod).toList()
         );
     }
 
     public Map<String, Object> getTree() {
         LinkedHashMap<String, Map<String, Object>> companies = new LinkedHashMap<>();
-        treeRepository.findCompanyStationRows().forEach(row -> {
+        treeMapper.findCompanyStationRows().forEach(row -> {
             Map<String, Object> companyNode = companies.computeIfAbsent(row.companyId(), key -> {
                 Map<String, Object> node = new LinkedHashMap<>();
                 node.put("id", row.companyId());
@@ -128,16 +128,16 @@ public class StrategyDataService {
     }
 
     public Map<String, Object> getKpi() {
-        List<StrategyRecordRepository.StrategyRow> strategies = recordRepository.findAll(StrategySupport.DEFAULT_BIZ_DATE);
-        List<StrategyRevenueRepository.RevenueDailyRow> todayRevenue = revenueRepository.findByDateRange(
+        List<StrategyRecordMapper.StrategyRow> strategies = recordMapper.findAll(StrategySupport.DEFAULT_BIZ_DATE);
+        List<StrategyRevenueMapper.RevenueDailyRow> todayRevenue = revenueMapper.findByDateRange(
             StrategySupport.DEFAULT_BIZ_DATE,
             StrategySupport.DEFAULT_BIZ_DATE
         );
-        List<StrategyRecordRepository.ExecutionLogRow> logs = recordRepository.findAllExecutionLogs();
+        List<StrategyRecordMapper.ExecutionLogRow> logs = recordMapper.findAllExecutionLogs();
         long successLogs = logs.stream().filter(item -> Objects.equals(item.result(), "success")).count();
 
-        double todayRevenueValue = todayRevenue.stream().mapToDouble(StrategyRevenueRepository.RevenueDailyRow::actualRevenueCny).sum();
-        double todayEstimated = todayRevenue.stream().mapToDouble(StrategyRevenueRepository.RevenueDailyRow::estimatedRevenueCny).sum();
+        double todayRevenueValue = todayRevenue.stream().mapToDouble(StrategyRevenueMapper.RevenueDailyRow::actualRevenueCny).sum();
+        double todayEstimated = todayRevenue.stream().mapToDouble(StrategyRevenueMapper.RevenueDailyRow::estimatedRevenueCny).sum();
 
         return StrategySupport.orderedMap(
             "strategyCount", strategies.size(),
@@ -151,7 +151,7 @@ public class StrategyDataService {
     }
 
     public Map<String, Object> getList(String status, String type, String region, String stationId, String keyword) {
-        List<StrategyRecordRepository.StrategyRow> items = filterStrategies(recordRepository.findAll(StrategySupport.DEFAULT_BIZ_DATE), status, type, region, stationId, keyword);
+        List<StrategyRecordMapper.StrategyRow> items = filterStrategies(recordMapper.findAll(StrategySupport.DEFAULT_BIZ_DATE), status, type, region, stationId, keyword);
         return StrategySupport.orderedMap(
             "items", items.stream().map(this::mapListItem).toList(),
             "total", items.size()
@@ -159,7 +159,7 @@ public class StrategyDataService {
     }
 
     public Map<String, Object> getDetail(String id) {
-        StrategyRecordRepository.StrategyRow row = resolveStrategy(id);
+        StrategyRecordMapper.StrategyRow row = resolveStrategy(id);
         return StrategySupport.orderedMap(
             "id", row.id(),
             "name", row.name(),
@@ -187,22 +187,22 @@ public class StrategyDataService {
                 "high", StrategySupport.round(valueOrZero(row.confidenceHighCny()), 2)
             ),
             "successProbability", StrategySupport.round(valueOrZero(row.successProbabilityPct()), 1),
-            "periods", recordRepository.findPeriodsByStrategyId(row.id()).stream().map(this::mapPeriod).toList(),
-            "pricePeriods", priceRepository.findByStationId(row.stationId()).stream().map(this::mapPricePeriod).toList(),
-            "executionLogs", recordRepository.findExecutionLogsByStrategyId(row.id()).stream().map(this::mapExecutionLog).toList()
+            "periods", recordMapper.findPeriodsByStrategyId(row.id()).stream().map(this::mapPeriod).toList(),
+            "pricePeriods", priceMapper.findByStationId(row.stationId()).stream().map(this::mapPricePeriod).toList(),
+            "executionLogs", recordMapper.findExecutionLogsByStrategyId(row.id()).stream().map(this::mapExecutionLog).toList()
         );
     }
 
     public Map<String, Object> getElectricityPrice(String stationId) {
-        StrategyMetaRepository.StationRow station = metaRepository.findStations().stream()
+        StrategyMetaMapper.StationRow station = metaMapper.findStations().stream()
             .filter(item -> Objects.equals(item.id(), stationId))
             .findFirst()
-            .orElse(metaRepository.findStations().getFirst());
+            .orElse(metaMapper.findStations().getFirst());
 
         return StrategySupport.orderedMap(
             "stationId", station.id(),
             "stationName", station.name(),
-            "periods", priceRepository.findByStationId(station.id()).stream().map(this::mapPricePeriod).toList()
+            "periods", priceMapper.findByStationId(station.id()).stream().map(this::mapPricePeriod).toList()
         );
     }
 
@@ -210,11 +210,11 @@ public class StrategyDataService {
     public Map<String, Object> createStrategy(StrategyRequest request) {
         StrategyRequest normalized = normalizeRequest(request);
         String strategyId = nextStrategyId();
-        StrategyMetaRepository.StationRow station = resolveStation(normalized.stationId());
+        StrategyMetaMapper.StationRow station = resolveStation(normalized.stationId());
         LocalDateTime now = LocalDateTime.of(2026, 3, 30, 14, 30);
         StrategySimulationService.SimulationResult simulationResult = simulationService.simulate(normalized);
 
-        recordRepository.insertStrategy(new StrategyRecordRepository.StrategyMutationRow(
+        recordMapper.insertStrategy(new StrategyRecordMapper.StrategyMutationRow(
             strategyId,
             station.id(),
             station.companyId(),
@@ -230,9 +230,9 @@ public class StrategyDataService {
             now,
             now
         ));
-        buildPeriods(strategyId, normalized).forEach(recordRepository::insertPeriod);
+        buildPeriods(strategyId, normalized).forEach(recordMapper::insertPeriod);
         persistSimulationArtifacts(strategyId, simulationResult);
-        recordRepository.insertExecutionLog(new StrategyRecordRepository.ExecutionLogMutationRow(
+        recordMapper.insertExecutionLog(new StrategyRecordMapper.ExecutionLogMutationRow(
             strategyId + "-LOG-" + System.currentTimeMillis(),
             strategyId,
             now,
@@ -277,20 +277,20 @@ public class StrategyDataService {
     public Map<String, Object> batchDelete(List<String> ids) {
         int deletedCount = 0;
         for (String id : sanitizeIds(ids)) {
-            recordRepository.deleteSnapshot(id);
-            recordRepository.deleteRevenueDaily(id);
-            recordRepository.deleteExecutionLogs(id);
-            recordRepository.deletePeriods(id);
-            deletedCount += recordRepository.deleteStrategy(id);
+            recordMapper.deleteSnapshot(id);
+            recordMapper.deleteRevenueDaily(id);
+            recordMapper.deleteExecutionLogs(id);
+            recordMapper.deletePeriods(id);
+            deletedCount += recordMapper.deleteStrategy(id);
         }
         return StrategySupport.orderedMap("deletedCount", deletedCount);
     }
 
     private Map<String, Object> updateStatus(String id, String nextStatus, String action, String result) {
-        StrategyRecordRepository.StrategyRow row = resolveStrategy(id);
+        StrategyRecordMapper.StrategyRow row = resolveStrategy(id);
         LocalDateTime updatedAt = LocalDateTime.of(2026, 3, 30, 14, 35);
-        recordRepository.updateStatus(row.id(), nextStatus, updatedAt);
-        recordRepository.insertExecutionLog(new StrategyRecordRepository.ExecutionLogMutationRow(
+        recordMapper.updateStatus(row.id(), nextStatus, updatedAt);
+        recordMapper.insertExecutionLog(new StrategyRecordMapper.ExecutionLogMutationRow(
             row.id() + "-LOG-" + System.nanoTime(),
             row.id(),
             updatedAt,
@@ -302,8 +302,8 @@ public class StrategyDataService {
         return mapListItem(resolveStrategy(row.id()));
     }
 
-    private List<StrategyRecordRepository.StrategyRow> filterStrategies(
-        List<StrategyRecordRepository.StrategyRow> items,
+    private List<StrategyRecordMapper.StrategyRow> filterStrategies(
+        List<StrategyRecordMapper.StrategyRow> items,
         String status,
         String type,
         String region,
@@ -318,28 +318,28 @@ public class StrategyDataService {
             .filter(item -> keyword == null || keyword.isBlank()
                 || item.name().toLowerCase().contains(keyword.toLowerCase())
                 || item.stationName().toLowerCase().contains(keyword.toLowerCase()))
-            .sorted(Comparator.comparing(StrategyRecordRepository.StrategyRow::updatedAt).reversed())
+            .sorted(Comparator.comparing(StrategyRecordMapper.StrategyRow::updatedAt).reversed())
             .toList();
     }
 
-    private StrategyRecordRepository.StrategyRow resolveStrategy(String id) {
-        StrategyRecordRepository.StrategyRow row = recordRepository.findById(id, StrategySupport.DEFAULT_BIZ_DATE);
+    private StrategyRecordMapper.StrategyRow resolveStrategy(String id) {
+        StrategyRecordMapper.StrategyRow row = recordMapper.findById(id, StrategySupport.DEFAULT_BIZ_DATE);
         if (row != null) {
             return row;
         }
-        return recordRepository.findAll(StrategySupport.DEFAULT_BIZ_DATE).stream().findFirst().orElseThrow();
+        return recordMapper.findAll(StrategySupport.DEFAULT_BIZ_DATE).stream().findFirst().orElseThrow();
     }
 
-    private StrategyMetaRepository.StationRow resolveStation(String stationId) {
-        return metaRepository.findStations().stream()
+    private StrategyMetaMapper.StationRow resolveStation(String stationId) {
+        return metaMapper.findStations().stream()
             .filter(item -> Objects.equals(item.id(), stationId))
             .findFirst()
             .orElseThrow();
     }
 
     private String nextStrategyId() {
-        int next = recordRepository.findAll(StrategySupport.DEFAULT_BIZ_DATE).stream()
-            .map(StrategyRecordRepository.StrategyRow::id)
+        int next = recordMapper.findAll(StrategySupport.DEFAULT_BIZ_DATE).stream()
+            .map(StrategyRecordMapper.StrategyRow::id)
             .map(id -> id.replace("SG-", ""))
             .mapToInt(value -> {
                 try {
@@ -354,7 +354,7 @@ public class StrategyDataService {
     }
 
     private StrategyRequest normalizeRequest(StrategyRequest request) {
-        StrategyMetaRepository.StationRow fallbackStation = metaRepository.findStations().getFirst();
+        StrategyMetaMapper.StationRow fallbackStation = metaMapper.findStations().getFirst();
         String stationId = request.stationId() == null || request.stationId().isBlank() ? fallbackStation.id() : request.stationId();
         String type = request.type() == null || request.type().isBlank() ? StrategySupport.TYPE_ORDER.getFirst() : request.type();
         LocalDateTime startTime = request.startTime() == null ? StrategySupport.DEFAULT_BIZ_DATE.atTime(8, 0) : request.startTime();
@@ -379,12 +379,12 @@ public class StrategyDataService {
         return StrategySupport.typeLabel(request.type()) + " Strategy";
     }
 
-    private List<StrategyRecordRepository.StrategyPeriodMutationRow> buildPeriods(String strategyId, StrategyRequest request) {
+    private List<StrategyRecordMapper.StrategyPeriodMutationRow> buildPeriods(String strategyId, StrategyRequest request) {
         int startSlot = StrategySupport.slotOf(request.startTime());
         int endSlotExclusive = Math.min(96, Math.max(startSlot + 1, StrategySupport.endSlotExclusive(request.endTime())));
         int span = Math.max(1, endSlotExclusive - startSlot);
         if (span < 8) {
-            return List.of(new StrategyRecordRepository.StrategyPeriodMutationRow(
+            return List.of(new StrategyRecordMapper.StrategyPeriodMutationRow(
                 strategyId,
                 1,
                 startSlot,
@@ -396,7 +396,7 @@ public class StrategyDataService {
 
         int firstEnd = startSlot + span / 2;
         return List.of(
-            new StrategyRecordRepository.StrategyPeriodMutationRow(
+            new StrategyRecordMapper.StrategyPeriodMutationRow(
                 strategyId,
                 1,
                 startSlot,
@@ -404,7 +404,7 @@ public class StrategyDataService {
                 primaryAction(request.type()),
                 0.85
             ),
-            new StrategyRecordRepository.StrategyPeriodMutationRow(
+            new StrategyRecordMapper.StrategyPeriodMutationRow(
                 strategyId,
                 2,
                 firstEnd,
@@ -416,14 +416,14 @@ public class StrategyDataService {
     }
 
     private void persistSimulationArtifacts(String strategyId, StrategySimulationService.SimulationResult simulationResult) {
-        recordRepository.insertSnapshot(new StrategyRecordRepository.StrategySnapshotMutationRow(
+        recordMapper.insertSnapshot(new StrategyRecordMapper.StrategySnapshotMutationRow(
             strategyId,
             simulationResult.estimatedRevenue(),
             simulationResult.confidenceLow(),
             simulationResult.confidenceHigh(),
             simulationResult.successProbability()
         ));
-        revenueRepository.insertRevenueDaily(new StrategyRevenueRepository.RevenueDailyMutationRow(
+        revenueMapper.insertRevenueDaily(new StrategyRevenueMapper.RevenueDailyMutationRow(
             strategyId,
             StrategySupport.DEFAULT_BIZ_DATE,
             simulationResult.estimatedRevenue(),
@@ -451,7 +451,7 @@ public class StrategyDataService {
         };
     }
 
-    private Map<String, Object> mapListItem(StrategyRecordRepository.StrategyRow row) {
+    private Map<String, Object> mapListItem(StrategyRecordMapper.StrategyRow row) {
         StrategySupport.StatusMeta statusMeta = StrategySupport.statusMeta(row.status());
         return StrategySupport.orderedMap(
             "id", row.id(),
@@ -481,7 +481,7 @@ public class StrategyDataService {
         );
     }
 
-    private Map<String, Object> mapPeriod(StrategyRecordRepository.StrategyPeriodRow row) {
+    private Map<String, Object> mapPeriod(StrategyRecordMapper.StrategyPeriodRow row) {
         return StrategySupport.orderedMap(
             "periodOrder", row.periodOrder(),
             "startSlot", row.startSlot(),
@@ -491,7 +491,7 @@ public class StrategyDataService {
         );
     }
 
-    private Map<String, Object> mapPricePeriod(StrategyPriceRepository.PricePeriodRow row) {
+    private Map<String, Object> mapPricePeriod(StrategyPriceMapper.PricePeriodRow row) {
         int nextSlot = Math.min(96, row.endSlot() + 1);
         return StrategySupport.orderedMap(
             "periodOrder", row.periodOrder(),
@@ -504,7 +504,7 @@ public class StrategyDataService {
         );
     }
 
-    private Map<String, Object> mapExecutionLog(StrategyRecordRepository.ExecutionLogRow row) {
+    private Map<String, Object> mapExecutionLog(StrategyRecordMapper.ExecutionLogRow row) {
         return StrategySupport.orderedMap(
             "id", row.id(),
             "time", row.eventTime(),

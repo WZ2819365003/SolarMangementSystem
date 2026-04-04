@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.techstar.pvms.backend.module.strategy.repository.StrategyTreeMapper">
+
+<select id="findCompanyStationRows" resultType="cn.techstar.pvms.backend.module.strategy.repository.StrategyTreeMapper$StationTreeRow">
+        SELECT co.id AS company_id,
+               co.name AS company_name,
+               co.region,
+               co.sort_index AS company_sort_index,
+               st.id AS station_id,
+               st.name AS station_name,
+               st.capacity_kwp,
+               st.status AS station_status,
+               st.data_quality,
+               st.sort_index AS station_sort_index,
+               COUNT(sg.id) AS strategy_count,
+               SUM(CASE WHEN sg.status = 'active' THEN 1 ELSE 0 END) AS active_count,
+               SUM(CASE WHEN sg.status = 'pending' THEN 1 ELSE 0 END) AS pending_count
+        FROM sa_company co
+        JOIN sa_station st ON st.company_id = co.id
+        LEFT JOIN sg_strategy sg ON sg.station_id = st.id
+        GROUP BY co.id, co.name, co.region, co.sort_index,
+                 st.id, st.name, st.capacity_kwp, st.status, st.data_quality, st.sort_index
+        ORDER BY co.sort_index, st.sort_index
+    </select>
+
+</mapper>

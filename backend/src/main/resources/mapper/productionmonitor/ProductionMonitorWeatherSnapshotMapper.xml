@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.techstar.pvms.backend.module.productionmonitor.repository.ProductionMonitorWeatherSnapshotMapper">
+
+    <select id="findAll" resultType="cn.techstar.pvms.backend.module.productionmonitor.repository.ProductionMonitorWeatherSnapshotMapper$WeatherSnapshotRow">
+        SELECT
+            resource_unit_id,
+            snapshot_time,
+            weather,
+            cloudiness,
+            temperature,
+            irradiance,
+            humidity,
+            wind_speed,
+            conclusion
+        FROM pm_weather_snapshot
+        ORDER BY resource_unit_id
+    </select>
+
+</mapper>

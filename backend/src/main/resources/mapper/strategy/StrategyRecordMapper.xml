@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.techstar.pvms.backend.module.strategy.repository.StrategyRecordMapper">
+
+
+
+
+
+<sql id="baseSelect">
+        SELECT
+            sg.id,
+            sg.station_id,
+            sg.company_id,
+            sg.name,
+            sg.type,
+            sg.status,
+            sg.mode,
+            sg.target_power_kw,
+            sg.start_time,
+            sg.end_time,
+            sg.version_no,
+            sg.remark,
+            sg.created_at,
+            sg.updated_at,
+            st.name AS station_name,
+            st.capacity_kwp,
+            st.status AS station_status,
+            st.data_quality,
+            st.sort_index AS station_sort_index,
+            co.name AS company_name,
+            co.region,
+            co.sort_index AS company_sort_index,
+            ss.last_simulated_revenue_cny,
+            ss.confidence_low_cny,
+            ss.confidence_high_cny,
+            ss.success_probability_pct,
+            rd.estimated_revenue_cny AS today_estimated_revenue_cny,
+            rd.actual_revenue_cny AS today_actual_revenue_cny
+        FROM sg_strategy sg
+        JOIN sa_station st ON st.id = sg.station_id
+        JOIN sa_company co ON co.id = sg.company_id
+        LEFT JOIN sg_strategy_snapshot ss ON ss.strategy_id = sg.id
+        LEFT JOIN sg_revenue_daily rd ON rd.strategy_id = sg.id AND rd.biz_date = #{bizDate}
+    </sql>
+
+    <select id="findAll" resultType="cn.techstar.pvms.backend.module.strategy.repository.StrategyRecordMapper$StrategyRow">
+        <include refid="baseSelect"/>
+        ORDER BY co.sort_index, st.sort_index, sg.updated_at DESC
+    </select>
+
+    <select id="findById" resultType="cn.techstar.pvms.backend.module.strategy.repository.StrategyRecordMapper$StrategyRow">
+        <include refid="baseSelect"/>
+        WHERE sg.id = #{id}
+    </select>
+
+    <select id="findPeriodsByStrategyId" resultType="cn.techstar.pvms.backend.module.strategy.repository.StrategyRecordMapper$StrategyPeriodRow">
+        SELECT strategy_id, period_order, start_slot, end_slot, action_type, target_ratio
+        FROM sg_strategy_period
+        WHERE strategy_id = #{strategyId}
+        ORDER BY period_order
+    </select>
+
+    <select id="findExecutionLogsByStrategyId" resultType="cn.techstar.pvms.backend.module.strategy.repository.StrategyRecordMapper$ExecutionLogRow">
+        SELECT id, strategy_id, event_time, action, result, deviation_rate_pct, operator_name
+        FROM sg_execution_log
+        WHERE strategy_id = #{strategyId}
+        ORDER BY event_time DESC
+    </select>
+
+    <select id="findAllExecutionLogs" resultType="cn.techstar.pvms.backend.module.strategy.repository.StrategyRecordMapper$ExecutionLogRow">
+        SELECT id, strategy_id, event_time, action, result, deviation_rate_pct, operator_name
+        FROM sg_execution_log
+        ORDER BY event_time DESC
+    </select>
+
+    <insert id="insertStrategy">
+        INSERT INTO sg_strategy (id, station_id, company_id, name, type, status, mode,
+                                 target_power_kw, start_time, end_time, version_no, remark,
+                                 created_at, updated_at)
+        VALUES (#{row.id}, #{row.stationId}, #{row.companyId}, #{row.name}, #{row.type},
+                #{row.status}, #{row.mode}, #{row.targetPowerKw}, #{row.startTime}, #{row.endTime},
+                #{row.versionNo}, #{row.remark}, #{row.createdAt}, #{row.updatedAt})
+    </insert>
+
+    <insert id="insertPeriod">
+        INSERT INTO sg_strategy_period (strategy_id, period_order, start_slot, end_slot, action_type, target_ratio)
+        VALUES (#{row.strategyId}, #{row.periodOrder}, #{row.startSlot}, #{row.endSlot},
+                #{row.actionType}, #{row.targetRatio})
+    </insert>
+
+    <insert id="insertExecutionLog">
+        INSERT INTO sg_execution_log (id, strategy_id, event_time, action, result, deviation_rate_pct, operator_name)
+        VALUES (#{row.id}, #{row.strategyId}, #{row.eventTime}, #{row.action}, #{row.result},
+                #{row.deviationRatePct}, #{row.operatorName})
+    </insert>
+
+    <insert id="insertSnapshot">
+        INSERT INTO sg_strategy_snapshot (strategy_id, last_simulated_revenue_cny, confidence_low_cny,
+                                         confidence_high_cny, success_probability_pct)
+        VALUES (#{row.strategyId}, #{row.lastSimulatedRevenueCny}, #{row.confidenceLowCny},
+                #{row.confidenceHighCny}, #{row.successProbabilityPct})
+    </insert>
+
+    <update id="updateSnapshot">
+        UPDATE sg_strategy_snapshot
+        SET last_simulated_revenue_cny = #{row.lastSimulatedRevenueCny},
+            confidence_low_cny         = #{row.confidenceLowCny},
+            confidence_high_cny        = #{row.confidenceHighCny},
+            success_probability_pct    = #{row.successProbabilityPct}
+        WHERE strategy_id = #{row.strategyId}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE sg_strategy
+        SET status     = #{status},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteSnapshot">
+        DELETE FROM sg_strategy_snapshot WHERE strategy_id = #{strategyId}
+    </delete>
+
+    <delete id="deleteRevenueDaily">
+        DELETE FROM sg_revenue_daily WHERE strategy_id = #{strategyId}
+    </delete>
+
+    <delete id="deleteExecutionLogs">
+        DELETE FROM sg_execution_log WHERE strategy_id = #{strategyId}
+    </delete>
+
+    <delete id="deletePeriods">
+        DELETE FROM sg_strategy_period WHERE strategy_id = #{strategyId}
+    </delete>
+
+    <delete id="deleteStrategy">
+        DELETE FROM sg_strategy WHERE id = #{strategyId}
+    </delete>
+
+</mapper>

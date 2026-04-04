@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.techstar.pvms.backend.module.dashboard.repository.DashboardStationGeoMapper">
+
+    <select id="findAll" resultType="cn.techstar.pvms.backend.module.dashboard.repository.DashboardStationGeoMapper$StationGeoRow">
+        SELECT
+            s.id,
+            s.name,
+            s.resource_unit_id,
+            s.resource_unit_name,
+            s.region,
+            s.longitude,
+            s.latitude,
+            s.address,
+            s.capacity_kwp,
+            ss.status,
+            ss.realtime_power_kw,
+            ss.today_energy_kwh,
+            ss.today_revenue_cny,
+            ss.availability,
+            ss.health_grade,
+            ss.snapshot_time
+        FROM dashboard_station s
+        JOIN dashboard_station_status_snapshot ss ON ss.station_id = s.id
+        ORDER BY s.id
+    </select>
+
+</mapper>

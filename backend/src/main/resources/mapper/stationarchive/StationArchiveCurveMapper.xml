@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveCurveMapper">
+
+    <sql id="curveColumns">
+        s.id AS station_id,
+        s.company_id,
+        s.name AS station_name,
+        s.status,
+        s.load_base_kw,
+        s.capacity_kwp,
+        s.sort_index,
+        c.biz_date,
+        c.time_slot,
+        c.load_kw,
+        c.pv_output_kw,
+        c.forecast_day_ahead_kw,
+        c.forecast_ultra_short_kw
+    </sql>
+
+    <select id="findByDate" resultType="cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveCurveMapper$CurveRow">
+        SELECT
+            <include refid="curveColumns"/>
+        FROM sa_station_curve_15m c
+        JOIN sa_station s ON s.id = c.station_id
+        WHERE c.biz_date = #{bizDate}
+        ORDER BY s.sort_index, c.time_slot
+    </select>
+
+    <select id="findByStationIdAndDate" resultType="cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveCurveMapper$CurveRow">
+        SELECT
+            <include refid="curveColumns"/>
+        FROM sa_station_curve_15m c
+        JOIN sa_station s ON s.id = c.station_id
+        WHERE c.station_id = #{stationId}
+          AND c.biz_date = #{bizDate}
+        ORDER BY c.time_slot
+    </select>
+
+</mapper>

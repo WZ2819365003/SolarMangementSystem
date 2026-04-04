@@ -1,12 +1,12 @@
 package cn.techstar.pvms.backend.module.forecast.service;
 
-import cn.techstar.pvms.backend.module.forecast.repository.ForecastAdjustableWindowRepository;
-import cn.techstar.pvms.backend.module.forecast.repository.ForecastCurveRepository;
-import cn.techstar.pvms.backend.module.forecast.repository.ForecastErrorSampleRepository;
-import cn.techstar.pvms.backend.module.forecast.repository.ForecastModelRepository;
-import cn.techstar.pvms.backend.module.forecast.repository.ForecastMonthlyAccuracyRepository;
-import cn.techstar.pvms.backend.module.forecast.repository.ForecastPredictionRepository;
-import cn.techstar.pvms.backend.module.forecast.repository.ForecastStationRepository;
+import cn.techstar.pvms.backend.module.forecast.repository.ForecastAdjustableWindowMapper;
+import cn.techstar.pvms.backend.module.forecast.repository.ForecastCurveMapper;
+import cn.techstar.pvms.backend.module.forecast.repository.ForecastErrorSampleMapper;
+import cn.techstar.pvms.backend.module.forecast.repository.ForecastModelMapper;
+import cn.techstar.pvms.backend.module.forecast.repository.ForecastMonthlyAccuracyMapper;
+import cn.techstar.pvms.backend.module.forecast.repository.ForecastPredictionMapper;
+import cn.techstar.pvms.backend.module.forecast.repository.ForecastStationMapper;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -35,42 +35,42 @@ public class ForecastDataService {
         "offline", new StatusMeta("离线", "info")
     );
 
-    private final ForecastStationRepository stationRepository;
-    private final ForecastCurveRepository curveRepository;
-    private final ForecastPredictionRepository predictionRepository;
-    private final ForecastModelRepository modelRepository;
-    private final ForecastErrorSampleRepository errorSampleRepository;
-    private final ForecastMonthlyAccuracyRepository monthlyAccuracyRepository;
-    private final ForecastAdjustableWindowRepository adjustableWindowRepository;
+    private final ForecastStationMapper stationMapper;
+    private final ForecastCurveMapper curveMapper;
+    private final ForecastPredictionMapper predictionMapper;
+    private final ForecastModelMapper modelMapper;
+    private final ForecastErrorSampleMapper errorSampleMapper;
+    private final ForecastMonthlyAccuracyMapper monthlyAccuracyMapper;
+    private final ForecastAdjustableWindowMapper adjustableWindowMapper;
     private final ForecastSeriesService seriesService;
     private final ForecastMetricsCalculator metricsCalculator;
 
     public ForecastDataService(
-        ForecastStationRepository stationRepository,
-        ForecastCurveRepository curveRepository,
-        ForecastPredictionRepository predictionRepository,
-        ForecastModelRepository modelRepository,
-        ForecastErrorSampleRepository errorSampleRepository,
-        ForecastMonthlyAccuracyRepository monthlyAccuracyRepository,
-        ForecastAdjustableWindowRepository adjustableWindowRepository,
+        ForecastStationMapper stationMapper,
+        ForecastCurveMapper curveMapper,
+        ForecastPredictionMapper predictionMapper,
+        ForecastModelMapper modelMapper,
+        ForecastErrorSampleMapper errorSampleMapper,
+        ForecastMonthlyAccuracyMapper monthlyAccuracyMapper,
+        ForecastAdjustableWindowMapper adjustableWindowMapper,
         ForecastSeriesService seriesService,
         ForecastMetricsCalculator metricsCalculator
     ) {
-        this.stationRepository = stationRepository;
-        this.curveRepository = curveRepository;
-        this.predictionRepository = predictionRepository;
-        this.modelRepository = modelRepository;
-        this.errorSampleRepository = errorSampleRepository;
-        this.monthlyAccuracyRepository = monthlyAccuracyRepository;
-        this.adjustableWindowRepository = adjustableWindowRepository;
+        this.stationMapper = stationMapper;
+        this.curveMapper = curveMapper;
+        this.predictionMapper = predictionMapper;
+        this.modelMapper = modelMapper;
+        this.errorSampleMapper = errorSampleMapper;
+        this.monthlyAccuracyMapper = monthlyAccuracyMapper;
+        this.adjustableWindowMapper = adjustableWindowMapper;
         this.seriesService = seriesService;
         this.metricsCalculator = metricsCalculator;
     }
 
     public Map<String, Object> getMeta() {
-        List<ForecastStationRepository.StationRow> stations = stationRepository.findAll();
+        List<ForecastStationMapper.StationRow> stations = stationMapper.findAll();
         LinkedHashSet<String> regions = stations.stream()
-            .map(ForecastStationRepository.StationRow::region)
+            .map(ForecastStationMapper.StationRow::region)
             .collect(Collectors.toCollection(LinkedHashSet::new));
 
         return orderedMap(
@@ -82,7 +82,7 @@ public class ForecastDataService {
                 orderedMap("label", "日前预测", "value", "day-ahead"),
                 orderedMap("label", "超短期预测", "value", "ultra-short")
             ),
-            "models", modelRepository.findAll().stream()
+            "models", modelMapper.findAll().stream()
                 .map(model -> orderedMap(
                     "id", model.id(),
                     "name", model.name(),
@@ -97,19 +97,19 @@ public class ForecastDataService {
     }
 
     public Map<String, Object> getOverview(String region, String stationId, String forecastType) {
-        List<ForecastStationRepository.StationRow> filteredStations = fallbackStations(resolveStations(region, stationId));
+        List<ForecastStationMapper.StationRow> filteredStations = fallbackStations(resolveStations(region, stationId));
         Set<String> stationIds = stationIdSet(filteredStations);
         String selectedForecastType = normalizeForecastType(forecastType);
 
-        List<ForecastCurveRepository.CurveRow> curves = curveRepository.findByDate(DEFAULT_BIZ_DATE).stream()
+        List<ForecastCurveMapper.CurveRow> curves = curveMapper.findByDate(DEFAULT_BIZ_DATE).stream()
             .filter(item -> stationIds.contains(item.stationId()))
             .toList();
-        List<ForecastPredictionRepository.PredictionRow> predictions = predictionRepository.findByDate(DEFAULT_BIZ_DATE).stream()
+        List<ForecastPredictionMapper.PredictionRow> predictions = predictionMapper.findByDate(DEFAULT_BIZ_DATE).stream()
             .filter(item -> stationIds.contains(item.stationId()))
             .toList();
 
-        Map<String, List<ForecastCurveRepository.CurveRow>> curvesByStation = groupByStation(curves, ForecastCurveRepository.CurveRow::stationId);
-        Map<String, Map<String, Map<Integer, ForecastPredictionRepository.PredictionRow>>> predictionsByStation =
+        Map<String, List<ForecastCurveMapper.CurveRow>> curvesByStation = groupByStation(curves, ForecastCurveMapper.CurveRow::stationId);
+        Map<String, Map<String, Map<Integer, ForecastPredictionMapper.PredictionRow>>> predictionsByStation =
             groupPredictionsByStationAndType(predictions);
 
         List<Double> aggregatedActual = emptySeries();
@@ -117,7 +117,7 @@ public class ForecastDataService {
         List<Double> aggregatedUltraShort = emptySeries();
         List<Map<String, Object>> stationTable = new ArrayList<>();
 
-        for (ForecastStationRepository.StationRow station : filteredStations) {
+        for (ForecastStationMapper.StationRow station : filteredStations) {
             List<Double> actualSeries = buildActualSeries(curvesByStation.getOrDefault(station.id(), List.of()));
             List<Double> dayAheadSeries = buildPredictionSeries(predictionsByStation, station.id(), "day-ahead");
             List<Double> ultraShortSeries = buildPredictionSeries(predictionsByStation, station.id(), "ultra-short");
@@ -158,15 +158,15 @@ public class ForecastDataService {
     }
 
     public Map<String, Object> getComparison(String region, String stationId) {
-        List<ForecastStationRepository.StationRow> filteredStations = fallbackStations(resolveStations(region, stationId));
-        ForecastStationRepository.StationRow focusStation = resolveFocusStation(filteredStations, stationId);
+        List<ForecastStationMapper.StationRow> filteredStations = fallbackStations(resolveStations(region, stationId));
+        ForecastStationMapper.StationRow focusStation = resolveFocusStation(filteredStations, stationId);
 
-        List<ForecastCurveRepository.CurveRow> curveRows = curveRepository.findByDate(DEFAULT_BIZ_DATE).stream()
+        List<ForecastCurveMapper.CurveRow> curveRows = curveMapper.findByDate(DEFAULT_BIZ_DATE).stream()
             .filter(item -> Objects.equals(item.stationId(), focusStation.id()))
             .toList();
-        Map<String, Map<String, Map<Integer, ForecastPredictionRepository.PredictionRow>>> predictionsByStation =
+        Map<String, Map<String, Map<Integer, ForecastPredictionMapper.PredictionRow>>> predictionsByStation =
             groupPredictionsByStationAndType(
-                predictionRepository.findByDate(DEFAULT_BIZ_DATE).stream()
+                predictionMapper.findByDate(DEFAULT_BIZ_DATE).stream()
                     .filter(item -> Objects.equals(item.stationId(), focusStation.id()))
                     .toList()
             );
@@ -190,13 +190,13 @@ public class ForecastDataService {
         LocalDate startDate,
         LocalDate endDate
     ) {
-        List<ForecastStationRepository.StationRow> filteredStations = fallbackStations(resolveStations(region, stationId));
+        List<ForecastStationMapper.StationRow> filteredStations = fallbackStations(resolveStations(region, stationId));
         Set<String> stationIds = stationIdSet(filteredStations);
         String selectedForecastType = normalizeForecastType(forecastType);
         LocalDate resolvedEndDate = endDate == null ? DEFAULT_BIZ_DATE : endDate;
         LocalDate resolvedStartDate = startDate == null ? resolvedEndDate.minusDays(6) : startDate;
 
-        List<ForecastErrorSampleRepository.ErrorSampleRow> errorRows = errorSampleRepository
+        List<ForecastErrorSampleMapper.ErrorSampleRow> errorRows = errorSampleMapper
             .findByDateRange(resolvedStartDate, resolvedEndDate).stream()
             .filter(item -> stationIds.contains(item.stationId()))
             .filter(item -> Objects.equals(item.forecastType(), selectedForecastType))
@@ -211,33 +211,33 @@ public class ForecastDataService {
             "startDate", resolvedStartDate.toString(),
             "endDate", resolvedEndDate.toString(),
             "hours", seriesService.buildHourAxis(),
-            "stations", filteredStations.stream().map(ForecastStationRepository.StationRow::name).toList(),
+            "stations", filteredStations.stream().map(ForecastStationMapper.StationRow::name).toList(),
             "data", matrix
         );
     }
 
     public Map<String, Object> getAdjustable(String region, String stationId, String forecastType) {
-        List<ForecastStationRepository.StationRow> filteredStations = fallbackStations(resolveStations(region, stationId));
+        List<ForecastStationMapper.StationRow> filteredStations = fallbackStations(resolveStations(region, stationId));
         Set<String> stationIds = stationIdSet(filteredStations);
         String selectedForecastType = normalizeForecastType(forecastType);
 
-        Map<String, List<ForecastCurveRepository.CurveRow>> curvesByStation = groupByStation(
-            curveRepository.findByDate(DEFAULT_BIZ_DATE).stream()
+        Map<String, List<ForecastCurveMapper.CurveRow>> curvesByStation = groupByStation(
+            curveMapper.findByDate(DEFAULT_BIZ_DATE).stream()
                 .filter(item -> stationIds.contains(item.stationId()))
                 .toList(),
-            ForecastCurveRepository.CurveRow::stationId
+            ForecastCurveMapper.CurveRow::stationId
         );
-        Map<String, Map<String, Map<Integer, ForecastPredictionRepository.PredictionRow>>> predictionsByStation =
+        Map<String, Map<String, Map<Integer, ForecastPredictionMapper.PredictionRow>>> predictionsByStation =
             groupPredictionsByStationAndType(
-                predictionRepository.findByDate(DEFAULT_BIZ_DATE).stream()
+                predictionMapper.findByDate(DEFAULT_BIZ_DATE).stream()
                     .filter(item -> stationIds.contains(item.stationId()))
                     .toList()
             );
-        Map<String, List<ForecastAdjustableWindowRepository.AdjustableWindowRow>> windowsByStation = groupByStation(
-            adjustableWindowRepository.findByDate(DEFAULT_BIZ_DATE).stream()
+        Map<String, List<ForecastAdjustableWindowMapper.AdjustableWindowRow>> windowsByStation = groupByStation(
+            adjustableWindowMapper.findByDate(DEFAULT_BIZ_DATE).stream()
                 .filter(item -> stationIds.contains(item.stationId()))
                 .toList(),
-            ForecastAdjustableWindowRepository.AdjustableWindowRow::stationId
+            ForecastAdjustableWindowMapper.AdjustableWindowRow::stationId
         );
 
         List<Double> aggregatedPredicted = emptySeries();
@@ -246,9 +246,9 @@ public class ForecastDataService {
         List<Map<String, Object>> timeline = new ArrayList<>();
         List<Map<String, Object>> stationTable = new ArrayList<>();
 
-        for (ForecastStationRepository.StationRow station : filteredStations) {
+        for (ForecastStationMapper.StationRow station : filteredStations) {
             List<Double> loadSeries = buildLoadSeries(curvesByStation.getOrDefault(station.id(), List.of()));
-            Map<Integer, ForecastPredictionRepository.PredictionRow> predictionRows = predictionsByStation
+            Map<Integer, ForecastPredictionMapper.PredictionRow> predictionRows = predictionsByStation
                 .getOrDefault(station.id(), Map.of())
                 .getOrDefault(selectedForecastType, Map.of());
 
@@ -257,7 +257,7 @@ public class ForecastDataService {
             List<Double> lowerAdjustableSeries = emptySeries();
             for (int slot = 0; slot < ForecastSeriesService.SLOTS_PER_DAY; slot += 1) {
                 double load = loadSeries.get(slot);
-                ForecastPredictionRepository.PredictionRow predictionRow = predictionRows.get(slot);
+                ForecastPredictionMapper.PredictionRow predictionRow = predictionRows.get(slot);
                 double predictedPower = predictionRow == null ? 0 : predictionRow.predictedPowerKw() / 1000.0;
                 double upperBoundPower = predictionRow == null ? 0 : predictionRow.upperBoundKw() / 1000.0;
                 double lowerBoundPower = predictionRow == null ? 0 : predictionRow.lowerBoundKw() / 1000.0;
@@ -328,26 +328,26 @@ public class ForecastDataService {
         LocalDate startDate,
         LocalDate endDate
     ) {
-        List<ForecastStationRepository.StationRow> filteredStations = fallbackStations(resolveStations(region, stationId));
+        List<ForecastStationMapper.StationRow> filteredStations = fallbackStations(resolveStations(region, stationId));
         Set<String> stationIds = stationIdSet(filteredStations);
         String selectedForecastType = normalizeForecastType(forecastType);
         LocalDate resolvedEndDate = endDate == null ? DEFAULT_BIZ_DATE : endDate;
         LocalDate resolvedStartDate = startDate == null ? resolvedEndDate.minusDays(29) : startDate;
 
-        List<ForecastErrorSampleRepository.ErrorSampleRow> errorRows = errorSampleRepository
+        List<ForecastErrorSampleMapper.ErrorSampleRow> errorRows = errorSampleMapper
             .findByDateRange(resolvedStartDate, resolvedEndDate).stream()
             .filter(item -> stationIds.contains(item.stationId()))
             .toList();
-        List<ForecastErrorSampleRepository.ErrorSampleRow> selectedErrorRows = errorRows.stream()
+        List<ForecastErrorSampleMapper.ErrorSampleRow> selectedErrorRows = errorRows.stream()
             .filter(item -> Objects.equals(item.forecastType(), selectedForecastType))
             .toList();
-        List<ForecastMonthlyAccuracyRepository.MonthlyAccuracyRow> monthlyRows = monthlyAccuracyRepository.findAll().stream()
+        List<ForecastMonthlyAccuracyMapper.MonthlyAccuracyRow> monthlyRows = monthlyAccuracyMapper.findAll().stream()
             .filter(item -> stationIds.contains(item.stationId()))
             .filter(item -> Objects.equals(item.forecastType(), selectedForecastType))
             .toList();
 
         List<Double> errorValuesKw = selectedErrorRows.stream()
-            .map(ForecastErrorSampleRepository.ErrorSampleRow::errorKw)
+            .map(ForecastErrorSampleMapper.ErrorSampleRow::errorKw)
             .toList();
         List<Double> errorValuesMw = errorValuesKw.stream().map(value -> round(value / 1000.0, 3)).toList();
         List<String> trendDates = resolvedStartDate.datesUntil(resolvedEndDate.plusDays(1))
@@ -382,7 +382,7 @@ public class ForecastDataService {
         );
     }
 
-    private Map<String, Object> mapStationMeta(ForecastStationRepository.StationRow station) {
+    private Map<String, Object> mapStationMeta(ForecastStationMapper.StationRow station) {
         return orderedMap(
             "id", station.id(),
             "name", station.name(),
@@ -394,16 +394,16 @@ public class ForecastDataService {
         );
     }
 
-    private List<ForecastStationRepository.StationRow> fallbackStations(List<ForecastStationRepository.StationRow> stations) {
+    private List<ForecastStationMapper.StationRow> fallbackStations(List<ForecastStationMapper.StationRow> stations) {
         if (!stations.isEmpty()) {
             return stations;
         }
-        return stationRepository.findAll();
+        return stationMapper.findAll();
     }
 
     private List<Double> buildHeatmapRow(
         String stationId,
-        List<ForecastErrorSampleRepository.ErrorSampleRow> errorRows
+        List<ForecastErrorSampleMapper.ErrorSampleRow> errorRows
     ) {
         List<Double> row = new ArrayList<>(24);
         for (int hour = 0; hour < 24; hour += 1) {
@@ -418,16 +418,16 @@ public class ForecastDataService {
         return row;
     }
 
-    private List<ForecastStationRepository.StationRow> resolveStations(String region, String stationId) {
-        List<ForecastStationRepository.StationRow> stations = stationRepository.findAll();
+    private List<ForecastStationMapper.StationRow> resolveStations(String region, String stationId) {
+        List<ForecastStationMapper.StationRow> stations = stationMapper.findAll();
         return stations.stream()
             .filter(item -> region == null || region.isBlank() || Objects.equals(item.region(), region))
             .filter(item -> stationId == null || stationId.isBlank() || Objects.equals(item.id(), stationId))
             .toList();
     }
 
-    private ForecastStationRepository.StationRow resolveFocusStation(
-        List<ForecastStationRepository.StationRow> filteredStations,
+    private ForecastStationMapper.StationRow resolveFocusStation(
+        List<ForecastStationMapper.StationRow> filteredStations,
         String stationId
     ) {
         if (!filteredStations.isEmpty()) {
@@ -436,22 +436,22 @@ public class ForecastDataService {
                 .findFirst()
                 .orElse(filteredStations.getFirst());
         }
-        return stationRepository.findAll().getFirst();
+        return stationMapper.findAll().getFirst();
     }
 
-    private Set<String> stationIdSet(Collection<ForecastStationRepository.StationRow> stations) {
-        return stations.stream().map(ForecastStationRepository.StationRow::id).collect(Collectors.toSet());
+    private Set<String> stationIdSet(Collection<ForecastStationMapper.StationRow> stations) {
+        return stations.stream().map(ForecastStationMapper.StationRow::id).collect(Collectors.toSet());
     }
 
     private <T> Map<String, List<T>> groupByStation(Collection<T> rows, Function<T, String> stationIdExtractor) {
         return rows.stream().collect(Collectors.groupingBy(stationIdExtractor, LinkedHashMap::new, Collectors.toList()));
     }
 
-    private Map<String, Map<String, Map<Integer, ForecastPredictionRepository.PredictionRow>>> groupPredictionsByStationAndType(
-        Collection<ForecastPredictionRepository.PredictionRow> predictions
+    private Map<String, Map<String, Map<Integer, ForecastPredictionMapper.PredictionRow>>> groupPredictionsByStationAndType(
+        Collection<ForecastPredictionMapper.PredictionRow> predictions
     ) {
-        Map<String, Map<String, Map<Integer, ForecastPredictionRepository.PredictionRow>>> index = new LinkedHashMap<>();
-        for (ForecastPredictionRepository.PredictionRow prediction : predictions) {
+        Map<String, Map<String, Map<Integer, ForecastPredictionMapper.PredictionRow>>> index = new LinkedHashMap<>();
+        for (ForecastPredictionMapper.PredictionRow prediction : predictions) {
             index.computeIfAbsent(prediction.stationId(), key -> new LinkedHashMap<>())
                 .computeIfAbsent(prediction.forecastType(), key -> new LinkedHashMap<>())
                 .put(prediction.timeSlot(), prediction);
@@ -459,46 +459,46 @@ public class ForecastDataService {
         return index;
     }
 
-    private Map<Integer, ForecastCurveRepository.CurveRow> indexCurves(List<ForecastCurveRepository.CurveRow> rows) {
-        Map<Integer, ForecastCurveRepository.CurveRow> index = new LinkedHashMap<>();
-        for (ForecastCurveRepository.CurveRow row : rows) {
+    private Map<Integer, ForecastCurveMapper.CurveRow> indexCurves(List<ForecastCurveMapper.CurveRow> rows) {
+        Map<Integer, ForecastCurveMapper.CurveRow> index = new LinkedHashMap<>();
+        for (ForecastCurveMapper.CurveRow row : rows) {
             index.put(row.timeSlot(), row);
         }
         return index;
     }
 
-    private List<Double> buildActualSeries(List<ForecastCurveRepository.CurveRow> rows) {
+    private List<Double> buildActualSeries(List<ForecastCurveMapper.CurveRow> rows) {
         return seriesService.buildSeries(rows.stream().collect(Collectors.toMap(
-            ForecastCurveRepository.CurveRow::timeSlot,
+            ForecastCurveMapper.CurveRow::timeSlot,
             row -> row.pvOutputKw() / 1000.0,
             (left, right) -> right,
             LinkedHashMap::new
         )));
     }
 
-    private List<Double> buildLoadSeries(List<ForecastCurveRepository.CurveRow> rows) {
+    private List<Double> buildLoadSeries(List<ForecastCurveMapper.CurveRow> rows) {
         return seriesService.buildSeries(rows.stream().collect(Collectors.toMap(
-            ForecastCurveRepository.CurveRow::timeSlot,
+            ForecastCurveMapper.CurveRow::timeSlot,
             row -> row.loadKw() / 1000.0,
             (left, right) -> right,
             LinkedHashMap::new
         )));
     }
 
-    private List<Double> buildPredictionSeries(Map<Integer, ForecastPredictionRepository.PredictionRow> rows) {
+    private List<Double> buildPredictionSeries(Map<Integer, ForecastPredictionMapper.PredictionRow> rows) {
         Map<Integer, Double> values = new LinkedHashMap<>();
-        for (Map.Entry<Integer, ForecastPredictionRepository.PredictionRow> entry : rows.entrySet()) {
+        for (Map.Entry<Integer, ForecastPredictionMapper.PredictionRow> entry : rows.entrySet()) {
             values.put(entry.getKey(), entry.getValue().predictedPowerKw() / 1000.0);
         }
         return seriesService.buildSeries(values);
     }
 
     private List<Double> buildPredictionSeries(
-        Map<String, Map<String, Map<Integer, ForecastPredictionRepository.PredictionRow>>> predictionsByStation,
+        Map<String, Map<String, Map<Integer, ForecastPredictionMapper.PredictionRow>>> predictionsByStation,
         String stationId,
         String forecastType
     ) {
-        Map<String, Map<Integer, ForecastPredictionRepository.PredictionRow>> stationPredictions =
+        Map<String, Map<Integer, ForecastPredictionMapper.PredictionRow>> stationPredictions =
             predictionsByStation.getOrDefault(stationId, Map.of());
         return buildPredictionSeries(stationPredictions.getOrDefault(forecastType, Map.of()));
     }
@@ -523,7 +523,7 @@ public class ForecastDataService {
     }
 
     private List<Double> buildTrendSeries(
-        List<ForecastErrorSampleRepository.ErrorSampleRow> errorRows,
+        List<ForecastErrorSampleMapper.ErrorSampleRow> errorRows,
         LocalDate startDate,
         LocalDate endDate,
         String forecastType
@@ -534,7 +534,7 @@ public class ForecastDataService {
             List<Double> dailyErrors = errorRows.stream()
                 .filter(item -> Objects.equals(item.bizDate(), targetDate))
                 .filter(item -> Objects.equals(item.forecastType(), forecastType))
-                .map(ForecastErrorSampleRepository.ErrorSampleRow::errorKw)
+                .map(ForecastErrorSampleMapper.ErrorSampleRow::errorKw)
                 .toList();
             series.add(metricsCalculator.accuracyFromErrorsKw(dailyErrors));
         }
@@ -553,18 +553,18 @@ public class ForecastDataService {
     }
 
     private List<Map<String, Object>> buildStationRanking(
-        List<ForecastStationRepository.StationRow> stations,
-        List<ForecastErrorSampleRepository.ErrorSampleRow> errorRows
+        List<ForecastStationMapper.StationRow> stations,
+        List<ForecastErrorSampleMapper.ErrorSampleRow> errorRows
     ) {
-        Map<String, List<ForecastErrorSampleRepository.ErrorSampleRow>> rowsByStation =
-            groupByStation(errorRows, ForecastErrorSampleRepository.ErrorSampleRow::stationId);
+        Map<String, List<ForecastErrorSampleMapper.ErrorSampleRow>> rowsByStation =
+            groupByStation(errorRows, ForecastErrorSampleMapper.ErrorSampleRow::stationId);
         return stations.stream()
             .map(station -> orderedMap(
                 "stationId", station.id(),
                 "name", station.name(),
                 "accuracy", metricsCalculator.accuracyFromErrorsKw(
                     rowsByStation.getOrDefault(station.id(), List.of()).stream()
-                        .map(ForecastErrorSampleRepository.ErrorSampleRow::errorKw)
+                        .map(ForecastErrorSampleMapper.ErrorSampleRow::errorKw)
                         .toList()
                 )
             ))
@@ -576,11 +576,11 @@ public class ForecastDataService {
     }
 
     private List<Map<String, Object>> buildMonthlyTable(
-        List<ForecastMonthlyAccuracyRepository.MonthlyAccuracyRow> rows
+        List<ForecastMonthlyAccuracyMapper.MonthlyAccuracyRow> rows
     ) {
-        Map<String, List<ForecastMonthlyAccuracyRepository.MonthlyAccuracyRow>> rowsByMonth =
+        Map<String, List<ForecastMonthlyAccuracyMapper.MonthlyAccuracyRow>> rowsByMonth =
             rows.stream().collect(Collectors.groupingBy(
-                ForecastMonthlyAccuracyRepository.MonthlyAccuracyRow::monthKey,
+                ForecastMonthlyAccuracyMapper.MonthlyAccuracyRow::monthKey,
                 LinkedHashMap::new,
                 Collectors.toList()
             ));
@@ -589,10 +589,10 @@ public class ForecastDataService {
         List<Map<String, Object>> table = new ArrayList<>();
         double previousAccuracy = 0;
         for (String month : sortedMonths) {
-            List<ForecastMonthlyAccuracyRepository.MonthlyAccuracyRow> monthRows = rowsByMonth.getOrDefault(month, List.of());
-            double maeMw = monthRows.stream().mapToDouble(ForecastMonthlyAccuracyRepository.MonthlyAccuracyRow::maeKw).average().orElse(0) / 1000.0;
-            double rmseMw = monthRows.stream().mapToDouble(ForecastMonthlyAccuracyRepository.MonthlyAccuracyRow::rmseKw).average().orElse(0) / 1000.0;
-            double accuracy = monthRows.stream().mapToDouble(ForecastMonthlyAccuracyRepository.MonthlyAccuracyRow::accuracyPct).average().orElse(0);
+            List<ForecastMonthlyAccuracyMapper.MonthlyAccuracyRow> monthRows = rowsByMonth.getOrDefault(month, List.of());
+            double maeMw = monthRows.stream().mapToDouble(ForecastMonthlyAccuracyMapper.MonthlyAccuracyRow::maeKw).average().orElse(0) / 1000.0;
+            double rmseMw = monthRows.stream().mapToDouble(ForecastMonthlyAccuracyMapper.MonthlyAccuracyRow::rmseKw).average().orElse(0) / 1000.0;
+            double accuracy = monthRows.stream().mapToDouble(ForecastMonthlyAccuracyMapper.MonthlyAccuracyRow::accuracyPct).average().orElse(0);
 
             table.add(orderedMap(
                 "month", month,
@@ -617,11 +617,11 @@ public class ForecastDataService {
         return Math.sqrt(sum / errorValuesKw.size());
     }
 
-    private double qualifiedRateFromSamples(List<ForecastErrorSampleRepository.ErrorSampleRow> rows) {
+    private double qualifiedRateFromSamples(List<ForecastErrorSampleMapper.ErrorSampleRow> rows) {
         if (rows.isEmpty()) {
             return 0;
         }
-        long qualifiedCount = rows.stream().filter(ForecastErrorSampleRepository.ErrorSampleRow::qualified).count();
+        long qualifiedCount = rows.stream().filter(ForecastErrorSampleMapper.ErrorSampleRow::qualified).count();
         return round(qualifiedCount * 100.0 / rows.size(), 1);
     }
 

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.techstar.pvms.backend.module.productionmonitor.repository.ProductionMonitorCurveMapper">
+
+    <sql id="curveColumns">
+        s.id AS station_id,
+        s.resource_unit_id,
+        s.name AS station_name,
+        s.capacity_mw,
+        s.weight,
+        s.status,
+        s.sort_index,
+        s.load_visible,
+        c.biz_date,
+        c.time_slot,
+        c.load_kw,
+        c.pv_power_kw,
+        c.forecast_power_kw,
+        c.baseline_power_kw,
+        c.irradiance,
+        c.temperature
+    </sql>
+
+    <select id="findByResourceUnitIdAndDate" resultType="cn.techstar.pvms.backend.module.productionmonitor.repository.ProductionMonitorCurveMapper$CurveRow">
+        SELECT
+            <include refid="curveColumns"/>
+        FROM pm_station_curve_15m c
+        JOIN pm_station s ON s.id = c.station_id
+        WHERE s.resource_unit_id = #{resourceUnitId}
+          AND c.biz_date = #{bizDate}
+        ORDER BY s.sort_index, c.time_slot
+    </select>
+
+    <select id="findLoadVisibleByDate" resultType="cn.techstar.pvms.backend.module.productionmonitor.repository.ProductionMonitorCurveMapper$CurveRow">
+        SELECT
+            <include refid="curveColumns"/>
+        FROM pm_station_curve_15m c
+        JOIN pm_station s ON s.id = c.station_id
+        WHERE s.load_visible = TRUE
+          AND c.biz_date = #{bizDate}
+        ORDER BY s.sort_index, c.time_slot
+    </select>
+
+</mapper>

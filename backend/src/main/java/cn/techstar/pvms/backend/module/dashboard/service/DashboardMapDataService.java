@@ -1,18 +1,22 @@
 package cn.techstar.pvms.backend.module.dashboard.service;
 
-import cn.techstar.pvms.backend.module.dashboard.repository.DashboardAlarmSnapshotRepository;
-import cn.techstar.pvms.backend.module.dashboard.repository.DashboardStationGeoRepository;
-import cn.techstar.pvms.backend.module.dashboard.repository.DashboardVppNodeSnapshotRepository;
+import cn.techstar.pvms.backend.module.dashboard.repository.DashboardAlarmSnapshotMapper;
+import cn.techstar.pvms.backend.module.dashboard.repository.DashboardStationGeoMapper;
+import cn.techstar.pvms.backend.module.dashboard.repository.DashboardVppNodeSnapshotMapper;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
+import java.util.stream.IntStream;
 
 @Service
 public class DashboardMapDataService {
@@ -21,24 +25,24 @@ public class DashboardMapDataService {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
     private static final Map<String, StatusMeta> STATUS_META = buildStatusMeta();
 
-    private final DashboardStationGeoRepository stationGeoRepository;
-    private final DashboardAlarmSnapshotRepository alarmSnapshotRepository;
-    private final DashboardVppNodeSnapshotRepository vppNodeSnapshotRepository;
+    private final DashboardStationGeoMapper stationGeoMapper;
+    private final DashboardAlarmSnapshotMapper alarmSnapshotMapper;
+    private final DashboardVppNodeSnapshotMapper vppNodeSnapshotMapper;
 
     public DashboardMapDataService(
-        DashboardStationGeoRepository stationGeoRepository,
-        DashboardAlarmSnapshotRepository alarmSnapshotRepository,
-        DashboardVppNodeSnapshotRepository vppNodeSnapshotRepository
+        DashboardStationGeoMapper stationGeoMapper,
+        DashboardAlarmSnapshotMapper alarmSnapshotMapper,
+        DashboardVppNodeSnapshotMapper vppNodeSnapshotMapper
     ) {
-        this.stationGeoRepository = stationGeoRepository;
-        this.alarmSnapshotRepository = alarmSnapshotRepository;
-        this.vppNodeSnapshotRepository = vppNodeSnapshotRepository;
+        this.stationGeoMapper = stationGeoMapper;
+        this.alarmSnapshotMapper = alarmSnapshotMapper;
+        this.vppNodeSnapshotMapper = vppNodeSnapshotMapper;
     }
 
     public Map<String, Object> getStationsGeo(String status, String region, String capacityRange) {
-        List<DashboardStationGeoRepository.StationGeoRow> allStations = stationGeoRepository.findAll();
+        List<DashboardStationGeoMapper.StationGeoRow> allStations = stationGeoMapper.findAll();
         CapacityRange range = parseCapacityRange(capacityRange);
-        List<DashboardStationGeoRepository.StationGeoRow> filteredStations = allStations.stream()
+        List<DashboardStationGeoMapper.StationGeoRow> filteredStations = allStations.stream()
             .filter(item -> status == null || status.isBlank() || Objects.equals(item.status(), status))
             .filter(item -> region == null || region.isBlank() || Objects.equals(item.region(), region))
             .filter(item -> item.capacityKwp() >= range.min() && item.capacityKwp() <= range.max())
@@ -56,8 +60,8 @@ public class DashboardMapDataService {
     }
 
     public Map<String, Object> getRecentAlarms(String level, String stationId) {
-        DashboardAlarmSnapshotRepository.AlarmSummary summary = alarmSnapshotRepository.summary();
-        List<DashboardAlarmSnapshotRepository.AlarmSnapshotRow> items = alarmSnapshotRepository.findRecent(level, stationId);
+        DashboardAlarmSnapshotMapper.AlarmSummary summary = alarmSnapshotMapper.summary();
+        List<DashboardAlarmSnapshotMapper.AlarmSnapshotRow> items = alarmSnapshotMapper.findRecent(level, stationId);
 
         return orderedMap(
             "summary", orderedMap(
@@ -71,11 +75,11 @@ public class DashboardMapDataService {
     }
 
     public Map<String, Object> getVppNodeStatus() {
-        DashboardVppNodeSnapshotRepository.VppNodeSnapshotRow node = vppNodeSnapshotRepository.findDefault();
-        List<DashboardStationGeoRepository.StationGeoRow> stations = stationGeoRepository.findAll();
+        DashboardVppNodeSnapshotMapper.VppNodeSnapshotRow node = vppNodeSnapshotMapper.findDefault();
+        List<DashboardStationGeoMapper.StationGeoRow> stations = stationGeoMapper.findAll();
         double availableCapacityMw = stations.stream()
             .filter(item -> !"offline".equals(item.status()) && !"fault".equals(item.status()))
-            .mapToDouble(DashboardStationGeoRepository.StationGeoRow::capacityKwp)
+            .mapToDouble(DashboardStationGeoMapper.StationGeoRow::capacityKwp)
             .sum() / 1000.0;
         long onlineStations = stations.stream()
             .filter(item -> !"offline".equals(item.status()))
@@ -102,9 +106,9 @@ public class DashboardMapDataService {
         return options;
     }
 
-    private List<Map<String, Object>> buildRegionOptions(List<DashboardStationGeoRepository.StationGeoRow> stations) {
+    private List<Map<String, Object>> buildRegionOptions(List<DashboardStationGeoMapper.StationGeoRow> stations) {
         LinkedHashSet<String> regions = new LinkedHashSet<>();
-        stations.stream().map(DashboardStationGeoRepository.StationGeoRow::region).forEach(regions::add);
+        stations.stream().map(DashboardStationGeoMapper.StationGeoRow::region).forEach(regions::add);
 
         List<Map<String, Object>> options = new ArrayList<>();
         options.add(option("全部区域", ""));
@@ -121,7 +125,7 @@ public class DashboardMapDataService {
         );
     }
 
-    private List<Map<String, Object>> buildSummary(List<DashboardStationGeoRepository.StationGeoRow> stations) {
+    private List<Map<String, Object>> buildSummary(List<DashboardStationGeoMapper.StationGeoRow> stations) {
         List<Map<String, Object>> items = new ArrayList<>();
         STATUS_META.forEach((status, meta) -> items.add(orderedMap(
             "key", status,
@@ -132,7 +136,7 @@ public class DashboardMapDataService {
         return items;
     }
 
-    private Map<String, Object> mapStation(DashboardStationGeoRepository.StationGeoRow station) {
+    private Map<String, Object> mapStation(DashboardStationGeoMapper.StationGeoRow station) {
         StatusMeta meta = STATUS_META.getOrDefault(station.status(), new StatusMeta(station.status(), "#909399"));
         return orderedMap(
             "id", station.id(),
@@ -155,7 +159,7 @@ public class DashboardMapDataService {
         );
     }
 
-    private Map<String, Object> mapAlarm(DashboardAlarmSnapshotRepository.AlarmSnapshotRow alarm) {
+    private Map<String, Object> mapAlarm(DashboardAlarmSnapshotMapper.AlarmSnapshotRow alarm) {
         return orderedMap(
             "id", alarm.id(),
             "time", formatTime(alarm.eventTime()),
@@ -217,6 +221,129 @@ public class DashboardMapDataService {
         meta.put("maintenance", new StatusMeta("检修", "#409EFF"));
         meta.put("offline", new StatusMeta("离线", "#909399"));
         return meta;
+    }
+
+    // ============= KPI Summary =============
+    public Map<String, Object> getKpiSummary(String stationId) {
+        List<DashboardStationGeoMapper.StationGeoRow> stations = stationGeoMapper.findAll();
+        if (stationId != null && !stationId.isBlank()) {
+            stations = stations.stream().filter(s -> s.id().equals(stationId)).toList();
+        }
+        String focusLabel = (stationId == null || stationId.isBlank()) ? "全系统"
+            : stations.stream().findFirst().map(DashboardStationGeoMapper.StationGeoRow::name).orElse("未知");
+        double totalCapacity = stations.stream().mapToDouble(DashboardStationGeoMapper.StationGeoRow::capacityKwp).sum();
+        double totalPower = stations.stream().mapToDouble(DashboardStationGeoMapper.StationGeoRow::realtimePowerKw).sum();
+        double totalEnergy = stations.stream().mapToDouble(DashboardStationGeoMapper.StationGeoRow::todayEnergyKwh).sum();
+        double totalRevenue = stations.stream().mapToDouble(DashboardStationGeoMapper.StationGeoRow::todayRevenueCny).sum();
+        double avgAvailability = stations.stream().mapToDouble(DashboardStationGeoMapper.StationGeoRow::availability).average().orElse(0);
+        return orderedMap(
+            "focusLabel", focusLabel,
+            "items", List.of(
+                kpiItem("capacity", "装机容量", round(totalCapacity / 1000, 2), "MW"),
+                kpiItem("power", "实时功率", round(totalPower / 1000, 2), "MW"),
+                kpiItem("energy", "今日发电量", round(totalEnergy / 1000, 1), "MWh"),
+                kpiItem("revenue", "今日收益", round(totalRevenue, 0), "元"),
+                kpiItem("hours", "等效利用小时", round(totalPower > 0 ? totalEnergy / totalPower : 0, 1), "h"),
+                kpiItem("availability", "平均可用率", round(avgAvailability, 1), "%"),
+                kpiItem("co2", "CO₂减排", round(totalEnergy * 0.785 / 1000, 1), "t"),
+                kpiItem("deviation", "功率偏差", round(3.2, 1), "%")
+            )
+        );
+    }
+
+    // ============= Power Curve =============
+    public Map<String, Object> getPowerCurve(String stationId, String date) {
+        String currentDate = (date != null && !date.isBlank()) ? date : LocalDate.now().toString();
+        List<DashboardStationGeoMapper.StationGeoRow> all = stationGeoMapper.findAll();
+        DashboardStationGeoMapper.StationGeoRow station = (stationId != null && !stationId.isBlank())
+            ? all.stream().filter(s -> s.id().equals(stationId)).findFirst().orElse(all.isEmpty() ? null : all.get(0))
+            : (all.isEmpty() ? null : all.get(0));
+        String name = station != null ? station.name() : "系统";
+        double cap = station != null ? station.capacityKwp() : all.stream().mapToDouble(DashboardStationGeoMapper.StationGeoRow::capacityKwp).sum();
+        long seed = currentDate.hashCode();
+        Random rng = new Random(seed);
+        List<Double> actual = IntStream.range(0, 96).mapToObj(i -> round(solarCurve(i, cap, rng, 0.9), 1)).toList();
+        List<Double> plan = IntStream.range(0, 96).mapToObj(i -> round(solarCurve(i, cap, rng, 1.0), 1)).toList();
+        return orderedMap("currentDate", currentDate, "stationName", name, "actual", actual, "plan", plan);
+    }
+
+    // ============= Station Ranking =============
+    public Map<String, Object> getStationRanking(String metric) {
+        String m = (metric != null && !metric.isBlank()) ? metric : "energy";
+        List<DashboardStationGeoMapper.StationGeoRow> stations = stationGeoMapper.findAll();
+        List<Map<String, Object>> rankings = stations.stream().map(s -> {
+            double value = switch (m) {
+                case "hours" -> s.todayEnergyKwh() / Math.max(s.capacityKwp(), 1) * 24;
+                case "pr" -> s.availability();
+                default -> s.todayEnergyKwh();
+            };
+            return orderedMap("id", (Object) s.id(), "name", s.name(), "value", round(value, 1));
+        }).sorted((a, b) -> Double.compare((double) b.get("value"), (double) a.get("value"))).toList();
+        return orderedMap(
+            "currentMetric", m,
+            "rankings", rankings,
+            "metricOptions", List.of(
+                orderedMap("key", "energy", "label", "发电量"),
+                orderedMap("key", "hours", "label", "利用小时"),
+                orderedMap("key", "pr", "label", "PR值")
+            )
+        );
+    }
+
+    // ============= Overview =============
+    public Map<String, Object> getOverview() {
+        List<DashboardStationGeoMapper.StationGeoRow> stations = stationGeoMapper.findAll();
+        DashboardAlarmSnapshotMapper.AlarmSummary alarmSummary = alarmSnapshotMapper.summary();
+        List<DashboardAlarmSnapshotMapper.AlarmSnapshotRow> alarms = alarmSnapshotMapper.findRecent(null, null);
+        List<Map<String, Object>> summaryCards = List.of(
+            orderedMap("key", "totalCapacity", "label", "总装机", "value", round(stations.stream().mapToDouble(DashboardStationGeoMapper.StationGeoRow::capacityKwp).sum() / 1000, 1), "unit", "MW"),
+            orderedMap("key", "totalPower", "label", "实时功率", "value", round(stations.stream().mapToDouble(DashboardStationGeoMapper.StationGeoRow::realtimePowerKw).sum() / 1000, 1), "unit", "MW"),
+            orderedMap("key", "todayEnergy", "label", "今日发电", "value", round(stations.stream().mapToDouble(DashboardStationGeoMapper.StationGeoRow::todayEnergyKwh).sum() / 1000, 1), "unit", "MWh"),
+            orderedMap("key", "todayRevenue", "label", "今日收益", "value", round(stations.stream().mapToDouble(DashboardStationGeoMapper.StationGeoRow::todayRevenueCny).sum(), 0), "unit", "元"),
+            orderedMap("key", "alarmCount", "label", "告警数", "value", alarmSummary.critical() + alarmSummary.major() + alarmSummary.minor() + alarmSummary.hint(), "unit", "条")
+        );
+        List<String> dates = IntStream.rangeClosed(1, 7).mapToObj(i -> LocalDate.now().minusDays(7 - i).toString()).toList();
+        Random rng = new Random(42);
+        List<Double> energy = dates.stream().map(d -> round(800 + rng.nextDouble() * 400, 0)).toList();
+        return orderedMap(
+            "summaryCards", summaryCards,
+            "trends", orderedMap("dates", dates, "energy", energy),
+            "focusAlarms", alarms.stream().limit(5).map(this::mapAlarm).toList(),
+            "stationRows", stations.stream().map(s -> orderedMap(
+                "id", s.id(), "name", s.name(), "status", s.status(),
+                "power", round(s.realtimePowerKw(), 1), "energy", round(s.todayEnergyKwh(), 1)
+            )).toList()
+        );
+    }
+
+    // ============= Weather =============
+    public Map<String, Object> getWeather(String stationId) {
+        List<DashboardStationGeoMapper.StationGeoRow> all = stationGeoMapper.findAll();
+        DashboardStationGeoMapper.StationGeoRow station = (stationId != null && !stationId.isBlank())
+            ? all.stream().filter(s -> s.id().equals(stationId)).findFirst().orElse(all.isEmpty() ? null : all.get(0))
+            : (all.isEmpty() ? null : all.get(0));
+        String name = station != null ? station.name() : "未知";
+        return orderedMap(
+            "stationName", name,
+            "current", orderedMap("weather", "晴", "temperature", 28, "humidity", 55, "irradiance", 850, "windSpeed", 2.3),
+            "forecast", List.of(
+                orderedMap("date", LocalDate.now().plusDays(1).toString(), "weather", "多云", "high", 30, "low", 22),
+                orderedMap("date", LocalDate.now().plusDays(2).toString(), "weather", "晴", "high", 32, "low", 23),
+                orderedMap("date", LocalDate.now().plusDays(3).toString(), "weather", "阴", "high", 27, "low", 20)
+            )
+        );
+    }
+
+    private double solarCurve(int slot, double capacityKw, Random rng, double factor) {
+        double hour = slot * 0.25;
+        if (hour < 6 || hour > 19) return 0;
+        double peak = (hour - 6) / 6.5;
+        double curve = Math.sin(peak * Math.PI) * capacityKw * factor * (0.85 + rng.nextDouble() * 0.15);
+        return Math.max(0, curve);
+    }
+
+    private Map<String, Object> kpiItem(String key, String label, double value, String unit) {
+        return orderedMap("key", key, "label", label, "value", value, "unit", unit);
     }
 
     private record StatusMeta(String label, String color) {

@@ -1,6 +1,6 @@
 package cn.techstar.pvms.backend.module.productionmonitor.service;
 
-import cn.techstar.pvms.backend.module.productionmonitor.repository.ProductionMonitorCurveRepository;
+import cn.techstar.pvms.backend.module.productionmonitor.repository.ProductionMonitorCurveMapper;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -12,7 +12,7 @@ import java.util.Map;
 @Component
 public class ProductionMonitorSeriesAggregator {
 
-    public List<AggregatedPoint> aggregate(List<ProductionMonitorCurveRepository.CurveRow> rows, String granularity) {
+    public List<AggregatedPoint> aggregate(List<ProductionMonitorCurveMapper.CurveRow> rows, String granularity) {
         int bucketSize = resolveBucketSize(granularity);
         int stepMinutes = bucketSize * 15;
         Map<Integer, BucketAccumulator> buckets = new LinkedHashMap<>();

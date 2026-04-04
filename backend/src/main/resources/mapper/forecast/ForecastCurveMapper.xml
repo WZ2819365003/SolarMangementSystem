@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.techstar.pvms.backend.module.forecast.repository.ForecastCurveMapper">
+
+    <sql id="curveColumns">
+        s.id AS station_id,
+        s.name AS station_name,
+        c.region,
+        s.status,
+        s.data_quality,
+        s.sort_index,
+        sc.biz_date,
+        sc.time_slot,
+        sc.load_kw,
+        sc.pv_output_kw,
+        sc.forecast_day_ahead_kw,
+        sc.forecast_ultra_short_kw
+    </sql>
+
+    <select id="findByDate" resultType="cn.techstar.pvms.backend.module.forecast.repository.ForecastCurveMapper$CurveRow">
+        SELECT
+            <include refid="curveColumns"/>
+        FROM sa_station_curve_15m sc
+        JOIN sa_station s ON s.id = sc.station_id
+        JOIN sa_company c ON c.id = s.company_id
+        WHERE sc.biz_date = #{bizDate}
+        ORDER BY s.sort_index, sc.time_slot
+    </select>
+
+</mapper>

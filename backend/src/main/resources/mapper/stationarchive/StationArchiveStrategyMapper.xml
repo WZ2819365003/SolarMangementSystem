@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveStrategyMapper">
+
+    <sql id="strategyColumns">
+        ss.station_id,
+        s.name AS station_name,
+        ss.name,
+        ss.type,
+        ss.status,
+        ss.start_time,
+        ss.end_time,
+        ss.target_power_kw,
+        ss.estimated_revenue_cny
+    </sql>
+
+    <select id="findAll" resultType="cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveStrategyMapper$StrategyRow">
+        SELECT
+            <include refid="strategyColumns"/>
+        FROM sa_station_strategy ss
+        JOIN sa_station s ON s.id = ss.station_id
+        ORDER BY s.sort_index
+    </select>
+
+    <select id="findByStationId" resultType="cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveStrategyMapper$StrategyRow">
+        SELECT
+            <include refid="strategyColumns"/>
+        FROM sa_station_strategy ss
+        JOIN sa_station s ON s.id = ss.station_id
+        WHERE ss.station_id = #{stationId}
+        LIMIT 1
+    </select>
+
+</mapper>

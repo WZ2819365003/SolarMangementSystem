@@ -1,10 +1,10 @@
 package cn.techstar.pvms.backend.module.productionmonitor.service;
 
-import cn.techstar.pvms.backend.module.productionmonitor.repository.ProductionMonitorCurveRepository;
-import cn.techstar.pvms.backend.module.productionmonitor.repository.ProductionMonitorDispatchRecordRepository;
-import cn.techstar.pvms.backend.module.productionmonitor.repository.ProductionMonitorResourceUnitRepository;
-import cn.techstar.pvms.backend.module.productionmonitor.repository.ProductionMonitorStationSnapshotRepository;
-import cn.techstar.pvms.backend.module.productionmonitor.repository.ProductionMonitorWeatherSnapshotRepository;
+import cn.techstar.pvms.backend.module.productionmonitor.repository.ProductionMonitorCurveMapper;
+import cn.techstar.pvms.backend.module.productionmonitor.repository.ProductionMonitorDispatchRecordMapper;
+import cn.techstar.pvms.backend.module.productionmonitor.repository.ProductionMonitorResourceUnitMapper;
+import cn.techstar.pvms.backend.module.productionmonitor.repository.ProductionMonitorStationSnapshotMapper;
+import cn.techstar.pvms.backend.module.productionmonitor.repository.ProductionMonitorWeatherSnapshotMapper;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -33,32 +33,32 @@ public class ProductionMonitorDataService {
         "offline", 0.22
     );
 
-    private final ProductionMonitorResourceUnitRepository resourceUnitRepository;
-    private final ProductionMonitorStationSnapshotRepository stationSnapshotRepository;
-    private final ProductionMonitorWeatherSnapshotRepository weatherSnapshotRepository;
-    private final ProductionMonitorCurveRepository curveRepository;
-    private final ProductionMonitorDispatchRecordRepository dispatchRecordRepository;
+    private final ProductionMonitorResourceUnitMapper resourceUnitMapper;
+    private final ProductionMonitorStationSnapshotMapper stationSnapshotMapper;
+    private final ProductionMonitorWeatherSnapshotMapper weatherSnapshotMapper;
+    private final ProductionMonitorCurveMapper curveMapper;
+    private final ProductionMonitorDispatchRecordMapper dispatchRecordMapper;
     private final ProductionMonitorSeriesAggregator seriesAggregator;
 
     public ProductionMonitorDataService(
-        ProductionMonitorResourceUnitRepository resourceUnitRepository,
-        ProductionMonitorStationSnapshotRepository stationSnapshotRepository,
-        ProductionMonitorWeatherSnapshotRepository weatherSnapshotRepository,
-        ProductionMonitorCurveRepository curveRepository,
-        ProductionMonitorDispatchRecordRepository dispatchRecordRepository,
+        ProductionMonitorResourceUnitMapper resourceUnitMapper,
+        ProductionMonitorStationSnapshotMapper stationSnapshotMapper,
+        ProductionMonitorWeatherSnapshotMapper weatherSnapshotMapper,
+        ProductionMonitorCurveMapper curveMapper,
+        ProductionMonitorDispatchRecordMapper dispatchRecordMapper,
         ProductionMonitorSeriesAggregator seriesAggregator
     ) {
-        this.resourceUnitRepository = resourceUnitRepository;
-        this.stationSnapshotRepository = stationSnapshotRepository;
-        this.weatherSnapshotRepository = weatherSnapshotRepository;
-        this.curveRepository = curveRepository;
-        this.dispatchRecordRepository = dispatchRecordRepository;
+        this.resourceUnitMapper = resourceUnitMapper;
+        this.stationSnapshotMapper = stationSnapshotMapper;
+        this.weatherSnapshotMapper = weatherSnapshotMapper;
+        this.curveMapper = curveMapper;
+        this.dispatchRecordMapper = dispatchRecordMapper;
         this.seriesAggregator = seriesAggregator;
     }
 
     public Map<String, Object> getMeta() {
-        List<ProductionMonitorResourceUnitRepository.ResourceUnitRow> resourceUnits = resourceUnitRepository.findAll();
-        Map<String, List<ProductionMonitorStationSnapshotRepository.StationSnapshotRow>> stationsByUnit = groupStationsByUnit();
+        List<ProductionMonitorResourceUnitMapper.ResourceUnitRow> resourceUnits = resourceUnitMapper.findAll();
+        Map<String, List<ProductionMonitorStationSnapshotMapper.StationSnapshotRow>> stationsByUnit = groupStationsByUnit();
 
         return orderedMap(
             "defaultResourceUnitId", resourceUnits.getFirst().id(),
@@ -139,19 +139,19 @@ public class ProductionMonitorDataService {
     public Map<String, Object> getLoad(String resourceUnitId, LocalDate bizDate, String granularity) {
         LocalDate resolvedBizDate = resolveBizDate(bizDate);
         String resolvedGranularity = normalizeGranularity(granularity);
-        List<ProductionMonitorStationSnapshotRepository.StationSnapshotRow> stations = stationSnapshotRepository.findAll().stream()
-            .filter(ProductionMonitorStationSnapshotRepository.StationSnapshotRow::loadVisible)
-            .sorted(java.util.Comparator.comparingInt(ProductionMonitorStationSnapshotRepository.StationSnapshotRow::sortIndex))
+        List<ProductionMonitorStationSnapshotMapper.StationSnapshotRow> stations = stationSnapshotMapper.findAll().stream()
+            .filter(ProductionMonitorStationSnapshotMapper.StationSnapshotRow::loadVisible)
+            .sorted(java.util.Comparator.comparingInt(ProductionMonitorStationSnapshotMapper.StationSnapshotRow::sortIndex))
             .toList();
-        Map<String, List<ProductionMonitorCurveRepository.CurveRow>> curvesByStation = curveRepository.findLoadVisibleByDate(resolvedBizDate).stream()
-            .collect(Collectors.groupingBy(ProductionMonitorCurveRepository.CurveRow::stationId, LinkedHashMap::new, Collectors.toList()));
+        Map<String, List<ProductionMonitorCurveMapper.CurveRow>> curvesByStation = curveMapper.findLoadVisibleByDate(resolvedBizDate).stream()
+            .collect(Collectors.groupingBy(ProductionMonitorCurveMapper.CurveRow::stationId, LinkedHashMap::new, Collectors.toList()));
 
         List<Map<String, Object>> stationRows = stations.stream()
             .map(station -> buildLoadStationRow(station, curvesByStation.getOrDefault(station.id(), List.of()), resolvedGranularity))
             .toList();
 
-        double totalLoadKw = stations.stream().mapToDouble(ProductionMonitorStationSnapshotRepository.StationSnapshotRow::loadKw).sum();
-        double totalPvKw = stations.stream().mapToDouble(ProductionMonitorStationSnapshotRepository.StationSnapshotRow::realtimePowerKw).sum();
+        double totalLoadKw = stations.stream().mapToDouble(ProductionMonitorStationSnapshotMapper.StationSnapshotRow::loadKw).sum();
+        double totalPvKw = stations.stream().mapToDouble(ProductionMonitorStationSnapshotMapper.StationSnapshotRow::realtimePowerKw).sum();
         double totalAdjustableKw = stations.stream()
             .mapToDouble(item -> Math.max(item.loadKw() - item.realtimePowerKw(), 0))
             .sum();
@@ -176,12 +176,12 @@ public class ProductionMonitorDataService {
 
     public Map<String, Object> getDispatch(String resourceUnitId) {
         Context context = resolveContext(resourceUnitId);
-        List<ProductionMonitorDispatchRecordRepository.DispatchRecordRow> records = dispatchRecordRepository.findByResourceUnitId(context.unit().id());
-        Map<String, List<ProductionMonitorDispatchRecordRepository.DispatchRecordRow>> recordsByHour = records.stream()
+        List<ProductionMonitorDispatchRecordMapper.DispatchRecordRow> records = dispatchRecordMapper.findByResourceUnitId(context.unit().id());
+        Map<String, List<ProductionMonitorDispatchRecordMapper.DispatchRecordRow>> recordsByHour = records.stream()
             .collect(Collectors.groupingBy(item -> formatHour(item.issuedAt()), LinkedHashMap::new, Collectors.toList()));
         List<String> axis = List.of("09:00", "10:00", "11:00", "12:00", "13:00", "14:00");
         long successCount = records.stream().filter(item -> Objects.equals(item.status(), "已完成")).count();
-        double averageResponseSeconds = records.stream().mapToInt(ProductionMonitorDispatchRecordRepository.DispatchRecordRow::responseSeconds).average().orElse(0);
+        double averageResponseSeconds = records.stream().mapToInt(ProductionMonitorDispatchRecordMapper.DispatchRecordRow::responseSeconds).average().orElse(0);
         double upRegulationMw = calculateUpRegulationMw(context.stations(), calculateRealtimePowerMw(context.stations()));
         double adjustmentUsedKw = records.stream()
             .mapToDouble(item -> Math.abs(item.targetPowerMw() - item.actualPowerMw()) * 1000.0)
@@ -200,7 +200,7 @@ public class ProductionMonitorDataService {
                 "axis", axis,
                 "issued", axis.stream().map(hour -> recordsByHour.getOrDefault(hour, List.of()).size()).toList(),
                 "success", axis.stream().map(hour -> (int) recordsByHour.getOrDefault(hour, List.of()).stream().filter(item -> Objects.equals(item.status(), "已完成")).count()).toList(),
-                "responseSeconds", axis.stream().map(hour -> (int) Math.round(recordsByHour.getOrDefault(hour, List.of()).stream().mapToInt(ProductionMonitorDispatchRecordRepository.DispatchRecordRow::responseSeconds).average().orElse(0))).toList()
+                "responseSeconds", axis.stream().map(hour -> (int) Math.round(recordsByHour.getOrDefault(hour, List.of()).stream().mapToInt(ProductionMonitorDispatchRecordMapper.DispatchRecordRow::responseSeconds).average().orElse(0))).toList()
             ),
             "riskHints", buildRiskHints(context.unit(), context.weather()),
             "records", records.stream().map(this::mapDispatchRecord).toList()
@@ -209,7 +209,7 @@ public class ProductionMonitorDataService {
 
     public Map<String, Object> getWeather(String resourceUnitId) {
         Context context = resolveContext(resourceUnitId);
-        ProductionMonitorWeatherSnapshotRepository.WeatherSnapshotRow weather = context.weather();
+        ProductionMonitorWeatherSnapshotMapper.WeatherSnapshotRow weather = context.weather();
 
         return orderedMap(
             "summary", List.of(
@@ -224,38 +224,38 @@ public class ProductionMonitorDataService {
     }
 
     private Context resolveContext(String resourceUnitId) {
-        List<ProductionMonitorResourceUnitRepository.ResourceUnitRow> units = resourceUnitRepository.findAll();
-        ProductionMonitorResourceUnitRepository.ResourceUnitRow unit = units.stream()
+        List<ProductionMonitorResourceUnitMapper.ResourceUnitRow> units = resourceUnitMapper.findAll();
+        ProductionMonitorResourceUnitMapper.ResourceUnitRow unit = units.stream()
             .filter(item -> Objects.equals(item.id(), resourceUnitId))
             .findFirst()
             .orElse(units.getFirst());
 
-        List<ProductionMonitorStationSnapshotRepository.StationSnapshotRow> stations = stationSnapshotRepository.findAll().stream()
+        List<ProductionMonitorStationSnapshotMapper.StationSnapshotRow> stations = stationSnapshotMapper.findAll().stream()
             .filter(item -> Objects.equals(item.resourceUnitId(), unit.id()))
-            .sorted(java.util.Comparator.comparingInt(ProductionMonitorStationSnapshotRepository.StationSnapshotRow::sortIndex))
+            .sorted(java.util.Comparator.comparingInt(ProductionMonitorStationSnapshotMapper.StationSnapshotRow::sortIndex))
             .toList();
-        ProductionMonitorWeatherSnapshotRepository.WeatherSnapshotRow weather = weatherSnapshotRepository.findAll().stream()
+        ProductionMonitorWeatherSnapshotMapper.WeatherSnapshotRow weather = weatherSnapshotMapper.findAll().stream()
             .filter(item -> Objects.equals(item.resourceUnitId(), unit.id()))
             .findFirst()
             .orElseThrow();
-        List<ProductionMonitorCurveRepository.CurveRow> curveRows =
-            curveRepository.findByResourceUnitIdAndDate(unit.id(), DEFAULT_BIZ_DATE);
+        List<ProductionMonitorCurveMapper.CurveRow> curveRows =
+            curveMapper.findByResourceUnitIdAndDate(unit.id(), DEFAULT_BIZ_DATE);
 
         return new Context(unit, stations, weather, curveRows);
     }
 
-    private Map<String, List<ProductionMonitorStationSnapshotRepository.StationSnapshotRow>> groupStationsByUnit() {
-        return stationSnapshotRepository.findAll().stream()
+    private Map<String, List<ProductionMonitorStationSnapshotMapper.StationSnapshotRow>> groupStationsByUnit() {
+        return stationSnapshotMapper.findAll().stream()
             .collect(Collectors.groupingBy(
-                ProductionMonitorStationSnapshotRepository.StationSnapshotRow::resourceUnitId,
+                ProductionMonitorStationSnapshotMapper.StationSnapshotRow::resourceUnitId,
                 LinkedHashMap::new,
                 Collectors.toList()
             ));
     }
 
-    private List<Map<String, Object>> buildRegionOptions(List<ProductionMonitorResourceUnitRepository.ResourceUnitRow> resourceUnits) {
+    private List<Map<String, Object>> buildRegionOptions(List<ProductionMonitorResourceUnitMapper.ResourceUnitRow> resourceUnits) {
         LinkedHashSet<String> regions = new LinkedHashSet<>();
-        resourceUnits.stream().map(ProductionMonitorResourceUnitRepository.ResourceUnitRow::region).forEach(regions::add);
+        resourceUnits.stream().map(ProductionMonitorResourceUnitMapper.ResourceUnitRow::region).forEach(regions::add);
         List<Map<String, Object>> options = new ArrayList<>();
         options.add(option("全部区域", ""));
         regions.forEach(region -> options.add(option(region, region)));
@@ -263,8 +263,8 @@ public class ProductionMonitorDataService {
     }
 
     private Map<String, Object> mapMetaUnit(
-        ProductionMonitorResourceUnitRepository.ResourceUnitRow unit,
-        List<ProductionMonitorStationSnapshotRepository.StationSnapshotRow> stations
+        ProductionMonitorResourceUnitMapper.ResourceUnitRow unit,
+        List<ProductionMonitorStationSnapshotMapper.StationSnapshotRow> stations
     ) {
         StatusMeta meta = STATUS_META.getOrDefault(unit.status(), new StatusMeta(unit.status(), "#909399"));
         return orderedMap(
@@ -284,8 +284,8 @@ public class ProductionMonitorDataService {
     }
 
     private List<Map<String, Object>> buildMemberStations(
-        List<ProductionMonitorStationSnapshotRepository.StationSnapshotRow> stations,
-        ProductionMonitorWeatherSnapshotRepository.WeatherSnapshotRow weather
+        List<ProductionMonitorStationSnapshotMapper.StationSnapshotRow> stations,
+        ProductionMonitorWeatherSnapshotMapper.WeatherSnapshotRow weather
     ) {
         return stations.stream().map(station -> orderedMap(
             "id", station.id(),
@@ -324,8 +324,8 @@ public class ProductionMonitorDataService {
     }
 
     private List<Map<String, Object>> buildContributionRanking(
-        List<ProductionMonitorStationSnapshotRepository.StationSnapshotRow> stations,
-        ProductionMonitorWeatherSnapshotRepository.WeatherSnapshotRow weather
+        List<ProductionMonitorStationSnapshotMapper.StationSnapshotRow> stations,
+        ProductionMonitorWeatherSnapshotMapper.WeatherSnapshotRow weather
     ) {
         return stations.stream()
             .sorted((left, right) -> Double.compare(right.realtimePowerKw(), left.realtimePowerKw()))
@@ -365,8 +365,8 @@ public class ProductionMonitorDataService {
     }
 
     private Map<String, Object> buildLoadStationRow(
-        ProductionMonitorStationSnapshotRepository.StationSnapshotRow station,
-        List<ProductionMonitorCurveRepository.CurveRow> curveRows,
+        ProductionMonitorStationSnapshotMapper.StationSnapshotRow station,
+        List<ProductionMonitorCurveMapper.CurveRow> curveRows,
         String granularity
     ) {
         List<ProductionMonitorSeriesAggregator.AggregatedPoint> points = seriesAggregator.aggregate(curveRows, granularity);
@@ -391,8 +391,8 @@ public class ProductionMonitorDataService {
     }
 
     private List<Map<String, Object>> buildRiskHints(
-        ProductionMonitorResourceUnitRepository.ResourceUnitRow unit,
-        ProductionMonitorWeatherSnapshotRepository.WeatherSnapshotRow weather
+        ProductionMonitorResourceUnitMapper.ResourceUnitRow unit,
+        ProductionMonitorWeatherSnapshotMapper.WeatherSnapshotRow weather
     ) {
         boolean highRisk = Objects.equals(unit.status(), "fault") || Objects.equals(unit.status(), "offline");
         boolean mediumRisk = Objects.equals(unit.status(), "warning") || Objects.equals(unit.status(), "maintenance");
@@ -415,7 +415,7 @@ public class ProductionMonitorDataService {
         );
     }
 
-    private Map<String, Object> buildWeatherTrend(ProductionMonitorWeatherSnapshotRepository.WeatherSnapshotRow weather) {
+    private Map<String, Object> buildWeatherTrend(ProductionMonitorWeatherSnapshotMapper.WeatherSnapshotRow weather) {
         return orderedMap(
             "axis", List.of("今天 12:00", "今天 15:00", "今天 18:00", "今天 21:00", "明天 09:00", "明天 12:00", "明天 15:00", "明天 18:00"),
             "series", List.of(
@@ -427,8 +427,8 @@ public class ProductionMonitorDataService {
     }
 
     private List<Map<String, Object>> buildWeatherImpactTable(
-        ProductionMonitorResourceUnitRepository.ResourceUnitRow unit,
-        ProductionMonitorWeatherSnapshotRepository.WeatherSnapshotRow weather
+        ProductionMonitorResourceUnitMapper.ResourceUnitRow unit,
+        ProductionMonitorWeatherSnapshotMapper.WeatherSnapshotRow weather
     ) {
         boolean constrained = Objects.equals(unit.status(), "fault") || Objects.equals(unit.status(), "offline");
         return List.of(
@@ -453,7 +453,7 @@ public class ProductionMonitorDataService {
         );
     }
 
-    private Map<String, Object> mapWeather(ProductionMonitorWeatherSnapshotRepository.WeatherSnapshotRow weather) {
+    private Map<String, Object> mapWeather(ProductionMonitorWeatherSnapshotMapper.WeatherSnapshotRow weather) {
         return orderedMap(
             "weather", weather.weather(),
             "cloudiness", weather.cloudiness(),
@@ -465,7 +465,7 @@ public class ProductionMonitorDataService {
         );
     }
 
-    private Map<String, Object> mapAlarm(ProductionMonitorResourceUnitRepository.ResourceUnitRow unit) {
+    private Map<String, Object> mapAlarm(ProductionMonitorResourceUnitMapper.ResourceUnitRow unit) {
         return orderedMap(
             "total", unit.alarmTotal(),
             "critical", unit.alarmCritical(),
@@ -476,7 +476,7 @@ public class ProductionMonitorDataService {
         );
     }
 
-    private Map<String, Object> mapDispatchRecord(ProductionMonitorDispatchRecordRepository.DispatchRecordRow item) {
+    private Map<String, Object> mapDispatchRecord(ProductionMonitorDispatchRecordMapper.DispatchRecordRow item) {
         return orderedMap(
             "issuedAt", formatDateTime(item.issuedAt()),
             "commandType", item.commandType(),
@@ -488,23 +488,23 @@ public class ProductionMonitorDataService {
         );
     }
 
-    private double calculateDispatchableCapacityMw(List<ProductionMonitorStationSnapshotRepository.StationSnapshotRow> stations) {
+    private double calculateDispatchableCapacityMw(List<ProductionMonitorStationSnapshotMapper.StationSnapshotRow> stations) {
         double value = stations.stream()
             .mapToDouble(item -> item.capacityMw() * STATUS_DISPATCH_FACTOR.getOrDefault(item.status(), 0.85))
             .sum();
         return round(value, 2);
     }
 
-    private double calculateRealtimePowerMw(List<ProductionMonitorStationSnapshotRepository.StationSnapshotRow> stations) {
-        return round(stations.stream().mapToDouble(ProductionMonitorStationSnapshotRepository.StationSnapshotRow::realtimePowerKw).sum() / 1000.0, 2);
+    private double calculateRealtimePowerMw(List<ProductionMonitorStationSnapshotMapper.StationSnapshotRow> stations) {
+        return round(stations.stream().mapToDouble(ProductionMonitorStationSnapshotMapper.StationSnapshotRow::realtimePowerKw).sum() / 1000.0, 2);
     }
 
     private double calculateTodayEnergyMwh(List<ProductionMonitorSeriesAggregator.AggregatedPoint> points) {
         return round(points.stream().mapToDouble(ProductionMonitorSeriesAggregator.AggregatedPoint::pvPowerKw).sum() * 0.25 / 1000.0, 1);
     }
 
-    private double calculateUpRegulationMw(List<ProductionMonitorStationSnapshotRepository.StationSnapshotRow> stations, double realtimePowerMw) {
-        double totalCapacityMw = stations.stream().mapToDouble(ProductionMonitorStationSnapshotRepository.StationSnapshotRow::capacityMw).sum();
+    private double calculateUpRegulationMw(List<ProductionMonitorStationSnapshotMapper.StationSnapshotRow> stations, double realtimePowerMw) {
+        double totalCapacityMw = stations.stream().mapToDouble(ProductionMonitorStationSnapshotMapper.StationSnapshotRow::capacityMw).sum();
         return round(Math.max(totalCapacityMw - realtimePowerMw, 0) * 0.75, 2);
     }
 
@@ -512,8 +512,8 @@ public class ProductionMonitorDataService {
         return round(realtimePowerMw * 0.35, 2);
     }
 
-    private double calculateOnlineRate(List<ProductionMonitorStationSnapshotRepository.StationSnapshotRow> stations) {
-        return round(stations.stream().mapToDouble(ProductionMonitorStationSnapshotRepository.StationSnapshotRow::onlineRate).average().orElse(0), 1);
+    private double calculateOnlineRate(List<ProductionMonitorStationSnapshotMapper.StationSnapshotRow> stations) {
+        return round(stations.stream().mapToDouble(ProductionMonitorStationSnapshotMapper.StationSnapshotRow::onlineRate).average().orElse(0), 1);
     }
 
     private double calculateForecastAccuracy(List<ProductionMonitorSeriesAggregator.AggregatedPoint> points) {
@@ -617,10 +617,10 @@ public class ProductionMonitorDataService {
     }
 
     private record Context(
-        ProductionMonitorResourceUnitRepository.ResourceUnitRow unit,
-        List<ProductionMonitorStationSnapshotRepository.StationSnapshotRow> stations,
-        ProductionMonitorWeatherSnapshotRepository.WeatherSnapshotRow weather,
-        List<ProductionMonitorCurveRepository.CurveRow> curveRows
+        ProductionMonitorResourceUnitMapper.ResourceUnitRow unit,
+        List<ProductionMonitorStationSnapshotMapper.StationSnapshotRow> stations,
+        ProductionMonitorWeatherSnapshotMapper.WeatherSnapshotRow weather,
+        List<ProductionMonitorCurveMapper.CurveRow> curveRows
     ) {
     }
 }

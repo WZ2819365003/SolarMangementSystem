@@ -1,6 +1,6 @@
 package cn.techstar.pvms.backend.module.strategy.service;
 
-import cn.techstar.pvms.backend.module.strategy.repository.StrategyRevenueRepository;
+import cn.techstar.pvms.backend.module.strategy.repository.StrategyRevenueMapper;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -17,23 +17,23 @@ import java.util.stream.Collectors;
 @Service
 public class StrategyRevenueService {
 
-    private final StrategyRevenueRepository revenueRepository;
+    private final StrategyRevenueMapper revenueMapper;
 
-    public StrategyRevenueService(StrategyRevenueRepository revenueRepository) {
-        this.revenueRepository = revenueRepository;
+    public StrategyRevenueService(StrategyRevenueMapper revenueMapper) {
+        this.revenueMapper = revenueMapper;
     }
 
     public Map<String, Object> getRevenueSummary(String region, String type, String stationId) {
-        List<StrategyRevenueRepository.RevenueDailyRow> filteredRows = filterRevenueRows(
-            revenueRepository.findByDateRange(StrategySupport.DEFAULT_BIZ_DATE.minusDays(13), StrategySupport.DEFAULT_BIZ_DATE),
+        List<StrategyRevenueMapper.RevenueDailyRow> filteredRows = filterRevenueRows(
+            revenueMapper.findByDateRange(StrategySupport.DEFAULT_BIZ_DATE.minusDays(13), StrategySupport.DEFAULT_BIZ_DATE),
             region,
             type,
             stationId
         );
 
-        Map<LocalDate, List<StrategyRevenueRepository.RevenueDailyRow>> rowsByDate = filteredRows.stream()
+        Map<LocalDate, List<StrategyRevenueMapper.RevenueDailyRow>> rowsByDate = filteredRows.stream()
             .collect(Collectors.groupingBy(
-                StrategyRevenueRepository.RevenueDailyRow::bizDate,
+                StrategyRevenueMapper.RevenueDailyRow::bizDate,
                 LinkedHashMap::new,
                 Collectors.toList()
             ));
@@ -42,13 +42,13 @@ public class StrategyRevenueService {
 
         List<String> dates = orderedDates.stream().map(LocalDate::toString).toList();
         List<Double> estimated = orderedDates.stream()
-            .map(date -> StrategySupport.round(rowsByDate.getOrDefault(date, List.of()).stream().mapToDouble(StrategyRevenueRepository.RevenueDailyRow::estimatedRevenueCny).sum(), 2))
+            .map(date -> StrategySupport.round(rowsByDate.getOrDefault(date, List.of()).stream().mapToDouble(StrategyRevenueMapper.RevenueDailyRow::estimatedRevenueCny).sum(), 2))
             .toList();
         List<Double> actual = orderedDates.stream()
-            .map(date -> StrategySupport.round(rowsByDate.getOrDefault(date, List.of()).stream().mapToDouble(StrategyRevenueRepository.RevenueDailyRow::actualRevenueCny).sum(), 2))
+            .map(date -> StrategySupport.round(rowsByDate.getOrDefault(date, List.of()).stream().mapToDouble(StrategyRevenueMapper.RevenueDailyRow::actualRevenueCny).sum(), 2))
             .toList();
 
-        List<StrategyRevenueRepository.RevenueDailyRow> todayRows = filteredRows.stream()
+        List<StrategyRevenueMapper.RevenueDailyRow> todayRows = filteredRows.stream()
             .filter(item -> Objects.equals(item.bizDate(), StrategySupport.DEFAULT_BIZ_DATE))
             .toList();
 
@@ -58,24 +58,24 @@ public class StrategyRevenueService {
                 "label", StrategySupport.typeLabel(value),
                 "actualRevenue", StrategySupport.round(todayRows.stream()
                     .filter(item -> Objects.equals(item.type(), value))
-                    .mapToDouble(StrategyRevenueRepository.RevenueDailyRow::actualRevenueCny)
+                    .mapToDouble(StrategyRevenueMapper.RevenueDailyRow::actualRevenueCny)
                     .sum(), 2),
                 "estimatedRevenue", StrategySupport.round(todayRows.stream()
                     .filter(item -> Objects.equals(item.type(), value))
-                    .mapToDouble(StrategyRevenueRepository.RevenueDailyRow::estimatedRevenueCny)
+                    .mapToDouble(StrategyRevenueMapper.RevenueDailyRow::estimatedRevenueCny)
                     .sum(), 2)
             ))
             .toList();
 
-        double todayRevenue = todayRows.stream().mapToDouble(StrategyRevenueRepository.RevenueDailyRow::actualRevenueCny).sum();
-        double todayEstimated = todayRows.stream().mapToDouble(StrategyRevenueRepository.RevenueDailyRow::estimatedRevenueCny).sum();
+        double todayRevenue = todayRows.stream().mapToDouble(StrategyRevenueMapper.RevenueDailyRow::actualRevenueCny).sum();
+        double todayEstimated = todayRows.stream().mapToDouble(StrategyRevenueMapper.RevenueDailyRow::estimatedRevenueCny).sum();
 
         return StrategySupport.orderedMap(
             "kpi", StrategySupport.orderedMap(
                 "todayRevenue", StrategySupport.round(todayRevenue, 2),
                 "todayEstimatedRevenue", StrategySupport.round(todayEstimated, 2),
                 "revenueAchievementRate", todayEstimated == 0 ? 0 : StrategySupport.round(todayRevenue * 100.0 / todayEstimated, 1),
-                "strategyCount", todayRows.stream().map(StrategyRevenueRepository.RevenueDailyRow::strategyId).distinct().count()
+                "strategyCount", todayRows.stream().map(StrategyRevenueMapper.RevenueDailyRow::strategyId).distinct().count()
             ),
             "trend", StrategySupport.orderedMap(
                 "dates", dates,
@@ -89,14 +89,14 @@ public class StrategyRevenueService {
     public Map<String, Object> getRevenueDetail(String region, String type, String stationId, LocalDate startDate, LocalDate endDate) {
         LocalDate resolvedEndDate = endDate == null ? StrategySupport.DEFAULT_BIZ_DATE : endDate;
         LocalDate resolvedStartDate = startDate == null ? resolvedEndDate.minusDays(13) : startDate;
-        List<StrategyRevenueRepository.RevenueDailyRow> rows = filterRevenueRows(
-            revenueRepository.findByDateRange(resolvedStartDate, resolvedEndDate),
+        List<StrategyRevenueMapper.RevenueDailyRow> rows = filterRevenueRows(
+            revenueMapper.findByDateRange(resolvedStartDate, resolvedEndDate),
             region,
             type,
             stationId
         ).stream()
-            .sorted(Comparator.comparing(StrategyRevenueRepository.RevenueDailyRow::bizDate).reversed()
-                .thenComparing(StrategyRevenueRepository.RevenueDailyRow::strategyId))
+            .sorted(Comparator.comparing(StrategyRevenueMapper.RevenueDailyRow::bizDate).reversed()
+                .thenComparing(StrategyRevenueMapper.RevenueDailyRow::strategyId))
             .toList();
 
         return StrategySupport.orderedMap(
@@ -109,28 +109,28 @@ public class StrategyRevenueService {
 
     public Map<String, Object> compare(List<String> ids) {
         Set<String> selectedIds = ids == null || ids.isEmpty()
-            ? revenueRepository.findAll().stream().map(StrategyRevenueRepository.RevenueDailyRow::strategyId).limit(2).collect(Collectors.toSet())
+            ? revenueMapper.findAll().stream().map(StrategyRevenueMapper.RevenueDailyRow::strategyId).limit(2).collect(Collectors.toSet())
             : ids.stream().filter(item -> item != null && !item.isBlank()).collect(Collectors.toCollection(LinkedHashSet::new));
 
-        List<StrategyRevenueRepository.RevenueDailyRow> selectedRows = revenueRepository.findAll().stream()
+        List<StrategyRevenueMapper.RevenueDailyRow> selectedRows = revenueMapper.findAll().stream()
             .filter(item -> selectedIds.contains(item.strategyId()))
             .toList();
 
-        Map<String, List<StrategyRevenueRepository.RevenueDailyRow>> rowsByStrategy = selectedRows.stream()
+        Map<String, List<StrategyRevenueMapper.RevenueDailyRow>> rowsByStrategy = selectedRows.stream()
             .collect(Collectors.groupingBy(
-                StrategyRevenueRepository.RevenueDailyRow::strategyId,
+                StrategyRevenueMapper.RevenueDailyRow::strategyId,
                 LinkedHashMap::new,
                 Collectors.toList()
             ));
 
         List<Map<String, Object>> items = rowsByStrategy.entrySet().stream()
             .map(entry -> {
-                List<StrategyRevenueRepository.RevenueDailyRow> rows = entry.getValue();
-                StrategyRevenueRepository.RevenueDailyRow latest = rows.stream()
-                    .max(Comparator.comparing(StrategyRevenueRepository.RevenueDailyRow::bizDate))
+                List<StrategyRevenueMapper.RevenueDailyRow> rows = entry.getValue();
+                StrategyRevenueMapper.RevenueDailyRow latest = rows.stream()
+                    .max(Comparator.comparing(StrategyRevenueMapper.RevenueDailyRow::bizDate))
                     .orElseThrow();
-                double totalActual = rows.stream().mapToDouble(StrategyRevenueRepository.RevenueDailyRow::actualRevenueCny).sum();
-                double totalEstimated = rows.stream().mapToDouble(StrategyRevenueRepository.RevenueDailyRow::estimatedRevenueCny).sum();
+                double totalActual = rows.stream().mapToDouble(StrategyRevenueMapper.RevenueDailyRow::actualRevenueCny).sum();
+                double totalEstimated = rows.stream().mapToDouble(StrategyRevenueMapper.RevenueDailyRow::estimatedRevenueCny).sum();
                 return StrategySupport.orderedMap(
                     "id", latest.strategyId(),
                     "name", latest.strategyName(),
@@ -155,8 +155,8 @@ public class StrategyRevenueService {
         );
     }
 
-    private List<StrategyRevenueRepository.RevenueDailyRow> filterRevenueRows(
-        List<StrategyRevenueRepository.RevenueDailyRow> rows,
+    private List<StrategyRevenueMapper.RevenueDailyRow> filterRevenueRows(
+        List<StrategyRevenueMapper.RevenueDailyRow> rows,
         String region,
         String type,
         String stationId
@@ -168,7 +168,7 @@ public class StrategyRevenueService {
             .toList();
     }
 
-    private Map<String, Object> mapRevenueItem(StrategyRevenueRepository.RevenueDailyRow row) {
+    private Map<String, Object> mapRevenueItem(StrategyRevenueMapper.RevenueDailyRow row) {
         return StrategySupport.orderedMap(
             "strategyId", row.strategyId(),
             "strategyName", row.strategyName(),

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveStationMapper">
+
+    <select id="findAll" resultType="cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveStationMapper$StationRow">
+        SELECT
+            s.id,
+            s.company_id,
+            c.name AS company_name,
+            s.name,
+            s.capacity_kwp,
+            s.status,
+            s.data_quality,
+            s.grid_status,
+            s.grid_status_label,
+            s.commission_date,
+            s.address,
+            s.load_base_kw,
+            s.sort_index
+        FROM sa_station s
+        JOIN sa_company c ON c.id = s.company_id
+        ORDER BY s.sort_index
+    </select>
+
+</mapper>

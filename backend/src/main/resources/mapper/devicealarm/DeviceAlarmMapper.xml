@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.techstar.pvms.backend.module.devicealarm.repository.DeviceAlarmMapper">
+
+
+
+<select id="findDeviceFacts" resultType="cn.techstar.pvms.backend.module.devicealarm.repository.DeviceAlarmMapper$DeviceFactRow">
+        SELECT i.id AS device_id,
+               i.name AS device_name,
+               i.station_id,
+               st.name AS station_name,
+               co.region,
+               co.name AS company_name,
+               i.sort_index,
+               i.rated_power_kw,
+               i.status AS raw_status,
+               i.model,
+               i.manufacturer,
+               i.module_temperature_c,
+               i.ambient_temperature_c,
+               crv.pv_output_kw AS station_pv_output_kw,
+               cnt.inverter_count,
+               sg.name AS strategy_name,
+               sg.type AS strategy_type
+        FROM sa_inverter i
+        JOIN sa_station st ON st.id = i.station_id
+        JOIN sa_company co ON co.id = st.company_id
+        LEFT JOIN sa_station_curve_15m crv
+            ON crv.station_id = i.station_id
+           AND crv.biz_date = #{bizDate}
+           AND crv.time_slot = #{timeSlot}
+        LEFT JOIN (
+            SELECT station_id, COUNT(*) AS inverter_count
+            FROM sa_inverter
+            GROUP BY station_id
+        ) cnt ON cnt.station_id = i.station_id
+        LEFT JOIN sg_strategy sg
+            ON sg.station_id = i.station_id
+           AND sg.status = 'active'
+        ORDER BY co.sort_index, st.sort_index, i.sort_index
+    </select>
+
+    <select id="findAlarmFacts" resultType="cn.techstar.pvms.backend.module.devicealarm.repository.DeviceAlarmMapper$AlarmFactRow">
+        SELECT a.id AS alarm_id,
+               a.inverter_id,
+               a.event_time,
+               a.type,
+               a.level AS raw_level,
+               a.description,
+               a.status AS raw_status,
+               i.name AS device_name,
+               i.model,
+               i.status AS device_status,
+               i.station_id,
+               st.name AS station_name,
+               co.region,
+               co.name AS company_name
+        FROM sa_inverter_alarm a
+        JOIN sa_inverter i ON i.id = a.inverter_id
+        JOIN sa_station st ON st.id = i.station_id
+        JOIN sa_company co ON co.id = st.company_id
+        ORDER BY a.event_time DESC
+    </select>
+
+</mapper>

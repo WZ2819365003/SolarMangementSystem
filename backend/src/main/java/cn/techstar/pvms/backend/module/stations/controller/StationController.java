@@ -1,7 +1,7 @@
 package cn.techstar.pvms.backend.module.stations.controller;
 
 import cn.techstar.pvms.backend.common.ApiResponse;
-import cn.techstar.pvms.backend.module.stations.service.StationMockService;
+import cn.techstar.pvms.backend.module.stations.service.StationDataService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,10 +14,10 @@ import java.util.Map;
 @RequestMapping("/api/pvms/resource-units")
 public class StationController {
 
-    private final StationMockService stationMockService;
+    private final StationDataService stationDataService;
 
-    public StationController(StationMockService stationMockService) {
-        this.stationMockService = stationMockService;
+    public StationController(StationDataService stationDataService) {
+        this.stationDataService = stationDataService;
     }
 
     @GetMapping("/list")
@@ -30,13 +30,13 @@ public class StationController {
         @RequestParam(defaultValue = "6") int pageSize
     ) {
         return ApiResponse.success(
-            stationMockService.getResourceUnitList(keyword, status, region, capacityRange, page, pageSize)
+            stationDataService.getResourceUnitList(keyword, status, region, capacityRange, page, pageSize)
         );
     }
 
     @GetMapping("/{resourceUnitId}/overview")
     public ApiResponse<Map<String, Object>> getResourceUnitOverview(@PathVariable String resourceUnitId) {
-        return ApiResponse.success(stationMockService.getResourceUnitOverview(resourceUnitId));
+        return ApiResponse.success(stationDataService.getResourceUnitOverview(resourceUnitId));
     }
 
     @GetMapping("/{resourceUnitId}/power-curve")
@@ -44,6 +44,6 @@ public class StationController {
         @PathVariable String resourceUnitId,
         @RequestParam(required = false) String date
     ) {
-        return ApiResponse.success(stationMockService.getResourceUnitPowerCurve(resourceUnitId, date));
+        return ApiResponse.success(stationDataService.getResourceUnitPowerCurve(resourceUnitId, date));
     }
 }

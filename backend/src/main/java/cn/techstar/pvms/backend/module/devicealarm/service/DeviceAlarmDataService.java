@@ -1,6 +1,6 @@
 package cn.techstar.pvms.backend.module.devicealarm.service;
 
-import cn.techstar.pvms.backend.module.devicealarm.repository.DeviceAlarmRepository;
+import cn.techstar.pvms.backend.module.devicealarm.repository.DeviceAlarmMapper;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -17,9 +17,9 @@ import java.util.stream.Collectors;
 @Service
 public class DeviceAlarmDataService {
 
-    private final DeviceAlarmRepository repository;
+    private final DeviceAlarmMapper repository;
 
-    public DeviceAlarmDataService(DeviceAlarmRepository repository) {
+    public DeviceAlarmDataService(DeviceAlarmMapper repository) {
         this.repository = repository;
     }
 
@@ -66,7 +66,7 @@ public class DeviceAlarmDataService {
         );
     }
 
-    private DeviceViewRow toDeviceViewRow(DeviceAlarmRepository.DeviceFactRow row) {
+    private DeviceViewRow toDeviceViewRow(DeviceAlarmMapper.DeviceFactRow row) {
         String type = DeviceAlarmSupport.resolveDeviceType(row.model(), row.ratedPowerKw());
         String status = DeviceAlarmSupport.deviceStatusLabel(row.rawStatus());
         double loadRate = DeviceAlarmSupport.computeLoadRate(
@@ -91,7 +91,7 @@ public class DeviceAlarmDataService {
         );
     }
 
-    private AlarmViewRow toAlarmViewRow(DeviceAlarmRepository.AlarmFactRow row) {
+    private AlarmViewRow toAlarmViewRow(DeviceAlarmMapper.AlarmFactRow row) {
         String level = DeviceAlarmSupport.alarmLevelLabel(row.rawLevel(), row.type());
         String status = DeviceAlarmSupport.alarmStatusLabel(row.eventTime(), row.rawStatus());
         return new AlarmViewRow(

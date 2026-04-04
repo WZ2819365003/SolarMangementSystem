@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveInverterMapper">
+
+    <sql id="inverterColumns">
+        i.id,
+        i.station_id,
+        s.name AS station_name,
+        i.name,
+        i.sort_index,
+        i.rated_power_kw,
+        i.status,
+        i.model,
+        i.manufacturer,
+        i.serial_no,
+        i.firmware_version,
+        i.install_date,
+        i.mppt_channels,
+        i.dc_input_voltage_v,
+        i.ac_output_voltage_v,
+        i.grid_frequency_hz,
+        i.module_temperature_c,
+        i.ambient_temperature_c,
+        i.string_count,
+        i.panels_per_string
+    </sql>
+
+    <select id="findAll" resultType="cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveInverterMapper$InverterRow">
+        SELECT
+            <include refid="inverterColumns"/>
+        FROM sa_inverter i
+        JOIN sa_station s ON s.id = i.station_id
+        ORDER BY s.sort_index, i.sort_index
+    </select>
+
+    <select id="findByStationId" resultType="cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveInverterMapper$InverterRow">
+        SELECT
+            <include refid="inverterColumns"/>
+        FROM sa_inverter i
+        JOIN sa_station s ON s.id = i.station_id
+        WHERE i.station_id = #{stationId}
+        ORDER BY i.sort_index
+    </select>
+
+    <select id="findById" resultType="cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveInverterMapper$InverterRow">
+        SELECT
+            <include refid="inverterColumns"/>
+        FROM sa_inverter i
+        JOIN sa_station s ON s.id = i.station_id
+        WHERE i.id = #{inverterId}
+        LIMIT 1
+    </select>
+
+</mapper>

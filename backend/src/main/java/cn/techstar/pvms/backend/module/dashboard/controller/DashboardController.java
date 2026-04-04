@@ -2,7 +2,6 @@ package cn.techstar.pvms.backend.module.dashboard.controller;
 
 import cn.techstar.pvms.backend.common.ApiResponse;
 import cn.techstar.pvms.backend.module.dashboard.service.DashboardMapDataService;
-import cn.techstar.pvms.backend.module.dashboard.service.DashboardMockService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -15,14 +14,9 @@ import java.util.Map;
 public class DashboardController {
 
     private final DashboardMapDataService dashboardMapDataService;
-    private final DashboardMockService dashboardMockService;
 
-    public DashboardController(
-        DashboardMapDataService dashboardMapDataService,
-        DashboardMockService dashboardMockService
-    ) {
+    public DashboardController(DashboardMapDataService dashboardMapDataService) {
         this.dashboardMapDataService = dashboardMapDataService;
-        this.dashboardMockService = dashboardMockService;
     }
 
     @GetMapping("/stations-geo")
@@ -38,7 +32,7 @@ public class DashboardController {
     public ApiResponse<Map<String, Object>> getKpiSummary(
         @RequestParam(required = false) String stationId
     ) {
-        return ApiResponse.success(dashboardMockService.getKpiSummary(stationId));
+        return ApiResponse.success(dashboardMapDataService.getKpiSummary(stationId));
     }
 
     @GetMapping("/power-curve")
@@ -46,19 +40,19 @@ public class DashboardController {
         @RequestParam(required = false) String stationId,
         @RequestParam(required = false) String date
     ) {
-        return ApiResponse.success(dashboardMockService.getPowerCurve(stationId, date));
+        return ApiResponse.success(dashboardMapDataService.getPowerCurve(stationId, date));
     }
 
     @GetMapping("/station-ranking")
     public ApiResponse<Map<String, Object>> getStationRanking(
         @RequestParam(required = false) String metric
     ) {
-        return ApiResponse.success(dashboardMockService.getStationRanking(metric));
+        return ApiResponse.success(dashboardMapDataService.getStationRanking(metric));
     }
 
     @GetMapping("/overview")
     public ApiResponse<Map<String, Object>> getOverview() {
-        return ApiResponse.success(dashboardMockService.getOverview());
+        return ApiResponse.success(dashboardMapDataService.getOverview());
     }
 
     @GetMapping("/vpp-node-status")

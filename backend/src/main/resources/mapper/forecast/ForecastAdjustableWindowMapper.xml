@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.techstar.pvms.backend.module.forecast.repository.ForecastAdjustableWindowMapper">
+
+    <select id="findByDate" resultType="cn.techstar.pvms.backend.module.forecast.repository.ForecastAdjustableWindowMapper$AdjustableWindowRow">
+        SELECT
+            w.station_id,
+            s.name AS station_name,
+            c.region,
+            s.sort_index,
+            w.biz_date,
+            w.window_order,
+            w.start_slot,
+            w.end_slot,
+            w.window_status
+        FROM fc_adjustable_window w
+        JOIN sa_station s ON s.id = w.station_id
+        JOIN sa_company c ON c.id = s.company_id
+        WHERE w.biz_date = #{bizDate}
+        ORDER BY s.sort_index, w.window_order
+    </select>
+
+</mapper>

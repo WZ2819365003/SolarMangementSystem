@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.techstar.pvms.backend.module.productionmonitor.repository.ProductionMonitorStationSnapshotMapper">
+
+    <select id="findAll" resultType="cn.techstar.pvms.backend.module.productionmonitor.repository.ProductionMonitorStationSnapshotMapper$StationSnapshotRow">
+        SELECT
+            s.id,
+            s.resource_unit_id,
+            s.name,
+            s.capacity_mw,
+            s.weight,
+            s.status,
+            s.online_rate,
+            s.alarm_count,
+            s.sort_index,
+            s.load_visible,
+            s.load_base_kw,
+            rs.snapshot_time,
+            rs.realtime_power_kw,
+            rs.load_kw,
+            rs.availability,
+            rs.health_grade
+        FROM pm_station s
+        JOIN pm_station_realtime_snapshot rs ON rs.station_id = s.id
+        ORDER BY s.sort_index
+    </select>
+
+</mapper>
