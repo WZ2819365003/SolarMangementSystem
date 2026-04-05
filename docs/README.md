@@ -1,55 +1,13 @@
-# 文档导航
+# 文档目录
 
-> v2.0.0 — 后端已迁移至 MyBatis + MySQL
+> 本目录包含光伏智能运营管理系统（PVMS）v2.0.0 的全部技术文档。
 
-## 新人阅读顺序
+| 序号 | 文档 | 内容 | 面向读者 |
+|---|---|---|---|
+| 1 | [平台功能说明](01_平台功能说明.md) | 各模块的功能描述、页面区域、交互流程 | 产品经理、业务方、初次接触的技术人员 |
+| 2 | [前端实现](02_前端实现.md) | 技术架构、组件结构、路由、API 调用、数据流 | 前端开发者 |
+| 3 | [后端实现](03_后端实现.md) | 分层架构、Mapper 设计、Service 逻辑、接口契约 | 后端开发者 |
+| 4 | [数据字典](04_数据字典.md) | 27 张表的字段定义、数据类型、枚举值、表关系 | 数据库管理员、后端开发者 |
+| 5 | [运维部署手册](05_运维部署手册.md) | 环境准备、启动命令、高德密钥、Docker、常见问题 | 运维人员、新接手开发者 |
 
-| 序号 | 文件 | 内容 |
-|---|---|---|
-| 1 | `handover/01_系统与阶段概览.md` | 系统定义、当前阶段 |
-| 2 | `handover/02_环境准备与本地启动.md` | 环境要求、MySQL 准备、启动命令 |
-| 3 | `handover/03_仓库结构与核心代码入口.md` | 目录结构、关键入口文件 |
-| 4 | `handover/04_前端维护手册.md` | Vue2 架构、路由、组件 |
-| 5 | `handover/05_后端维护手册.md` | MyBatis 架构、表分域、Mapper 说明 |
-| 6 | `handover/06_模块清单与接口链路.md` | 前后端接口映射表 |
-| 7 | `handover/08_测试_排障_交接清单.md` | 测试策略、常见问题 |
-
-## 专题文档
-
-| 文件 | 内容 |
-|---|---|
-| `handover/09_地图静态底图与动态点位下沉方案.md` | 高德地图集成方案 |
-| `handover/10_M02_生产监控_H2数据与计算说明.md` | 生产监控数据计算逻辑 |
-| `handover/11_M02_电站监控_H2数据与计算说明.md` | 电站监控数据计算逻辑 |
-| `handover/12_M03_预测分析_H2数据与计算说明.md` | 预测分析数据计算逻辑 |
-| `handover/13_M04_策略管理_H2数据与计算说明.md` | 策略管理数据计算逻辑 |
-| `handover/14_M05_M06_设备监测与告警中心_H2数据与计算说明.md` | 设备告警数据计算逻辑 |
-
-## 模块文档
-
-### 前端（`modules/frontend/`）
-
-dashboard / production-monitor / station-monitoring / stations / forecast / strategy / devices / alarms / infrastructure
-
-### 后端（`modules/backend/`）
-
-dashboard / production-monitor / station-archive / forecast / strategy / device-alarm / adjustable-capacity / system
-
-## 目录结构
-
-```
-docs/
-├── handover/           # 交接文档（01-14），新人入门主线
-├── modules/
-│   ├── frontend/       # 前端各模块组件与路由说明
-│   └── backend/        # 后端各模块接口与数据说明
-├── audits/             # 代码审计和契约核验记录
-├── testing/            # API 测试和 E2E 测试指南
-└── README.md           # 本文件
-```
-
-## 与项目根目录的关系
-
-- **`docs/`**（本目录）— 集中维护的最新文档
-- **`doc/`** — 早期功能设计书（参考用，不再更新）
-- **`README.md`**（根目录）— 快速启动和技术栈概览
+`_archive/` 目录为旧版文档归档，供机器检索参考，不再更新。
