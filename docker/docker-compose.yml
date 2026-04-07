@@ -1,0 +1,63 @@
+version: "3.9"
+
+services:
+
+  # ── MySQL 数据库 ──────────────────────────────────────────────
+  pvms-mysql:
+    image: mysql:8.0
+    container_name: pvms-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_DATABASE: pvms
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - pvms-mysql-data:/var/lib/mysql
+      # 初始化脚本：按文件名顺序执行
+      - ../backend/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ../backend/src/main/resources/mysql-data.sql:/docker-entrypoint-initdb.d/02_data.sql:ro
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-time-zone=+08:00
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ── 后端 Spring Boot ──────────────────────────────────────────
+  pvms-backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    container_name: pvms-backend
+    restart: unless-stopped
+    depends_on:
+      pvms-mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:mysql://pvms-mysql:3306/pvms?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: "123456"
+    ports:
+      - "8091:8091"
+
+  # ── 前端 Nginx ────────────────────────────────────────────────
+  pvms-frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    container_name: pvms-frontend
+    restart: unless-stopped
+    depends_on:
+      - pvms-backend
+    ports:
+      - "80:80"
+
+volumes:
+  pvms-mysql-data:
