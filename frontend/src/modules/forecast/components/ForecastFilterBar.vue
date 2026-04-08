@@ -1,10 +1,15 @@
 <template>
   <section class="forecast-filter-bar" data-testid="forecast-filter-bar">
     <el-form :inline="true" class="forecast-filter-bar__form" @submit.native.prevent>
-      <el-form-item label="区域">
-        <el-select v-model="localQuery.region" placeholder="全部区域" clearable>
+      <el-form-item label="资源单元">
+        <el-select
+          v-model="localQuery.resourceUnitId"
+          placeholder="全部资源单元"
+          clearable
+          @change="handleResourceUnitChange"
+        >
           <el-option
-            v-for="item in regionOptions"
+            v-for="item in resourceUnitOptions"
             :key="item.value"
             :label="item.label"
             :value="item.value"
@@ -15,7 +20,7 @@
       <el-form-item label="电站">
         <el-select v-model="localQuery.stationId" placeholder="全部电站" clearable>
           <el-option
-            v-for="item in stationOptions"
+            v-for="item in filteredStationOptions"
             :key="item.value"
             :label="item.label"
             :value="item.value"
@@ -66,11 +71,11 @@ export default {
       type: Object,
       default: () => ({})
     },
-    regionOptions: {
+    resourceUnitOptions: {
       type: Array,
       default: () => []
     },
-    stationOptions: {
+    allStationOptions: {
       type: Array,
       default: () => []
     }
@@ -78,11 +83,18 @@ export default {
   data() {
     return {
       localQuery: {
-        region: '',
+        resourceUnitId: '',
         stationId: '',
         dateRange: [],
         forecastType: 'day-ahead'
       }
+    }
+  },
+  computed: {
+    filteredStationOptions() {
+      var ruId = this.localQuery.resourceUnitId
+      if (!ruId) return this.allStationOptions
+      return this.allStationOptions.filter(function (s) { return s.companyId === ruId })
     }
   },
   watch: {
@@ -90,16 +102,16 @@ export default {
       immediate: true,
       deep: true,
       handler(value) {
-        this.localQuery = {
-          ...this.localQuery,
-          ...value
-        }
+        this.localQuery = Object.assign({}, this.localQuery, value)
       }
     }
   },
   methods: {
+    handleResourceUnitChange() {
+      this.localQuery.stationId = ''
+    },
     emitSearch() {
-      this.$emit('search', { ...this.localQuery })
+      this.$emit('search', Object.assign({}, this.localQuery))
     }
   }
 }
@@ -110,8 +122,9 @@ export default {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 18px;
-  padding: 18px 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 20px;
   border: 1px solid var(--pvms-border-soft);
   border-radius: 4px;
   background: var(--pvms-panel);
@@ -119,9 +132,10 @@ export default {
 }
 
 .forecast-filter-bar__form {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
   flex: 1;
 }
 
@@ -133,28 +147,18 @@ export default {
   color: var(--pvms-text-muted);
 }
 
-.forecast-filter-bar__form /deep/ .el-select,
+.forecast-filter-bar__form /deep/ .el-select {
+  width: 150px;
+}
+
 .forecast-filter-bar__form /deep/ .el-date-editor {
-  width: 100%;
+  width: 230px;
 }
 
 .forecast-filter-bar__actions {
   display: flex;
-  gap: 12px;
-}
-
-@media (max-width: 1500px) {
-  .forecast-filter-bar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .forecast-filter-bar__form {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .forecast-filter-bar__actions {
-    justify-content: flex-end;
-  }
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 </style>

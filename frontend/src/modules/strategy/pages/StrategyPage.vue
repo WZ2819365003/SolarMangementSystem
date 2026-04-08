@@ -11,8 +11,8 @@
     <strategy-filter-bar
       :view-key="currentViewKey"
       :query="query"
-      :region-options="meta.regionOptions"
-      :station-options="meta.stationOptions"
+      :resource-unit-options="meta.resourceUnitOptions"
+      :all-station-options="meta.allStations"
       :type-options="meta.typeOptions"
       :status-options="meta.statusOptions"
       @search="handleSearch"
@@ -73,14 +73,14 @@ export default {
         defaultStationId: '',
         companies: [],
         stations: [],
-        regionOptions: [],
-        stationOptions: [],
+        resourceUnitOptions: [],
+        allStations: [],
         typeOptions: [],
         statusOptions: [],
         priceTemplate: []
       },
       query: {
-        region: '',
+        resourceUnitId: '',
         stationId: '',
         type: '',
         status: '',
@@ -117,11 +117,11 @@ export default {
           defaultStationId: data.defaultStationId || '',
           companies: data.companies || [],
           stations: data.stations || [],
-          regionOptions: (data.companies || []).map(function (item) {
-            return { label: item.region, value: item.region }
-          }),
-          stationOptions: (data.stations || []).map(function (item) {
+          resourceUnitOptions: (data.companies || []).map(function (item) {
             return { label: item.name, value: item.id }
+          }),
+          allStations: (data.stations || []).map(function (item) {
+            return { label: item.name, value: item.id, companyId: item.companyId }
           }),
           typeOptions: (data.types || []).map(function (item) {
             return { label: item.label, value: item.value }
@@ -141,7 +141,7 @@ export default {
     },
     buildParams() {
       var params = {
-        region: this.query.region,
+        resourceUnitId: this.query.resourceUnitId,
         stationId: this.query.stationId,
         type: this.query.type,
         status: this.query.status,
@@ -173,7 +173,7 @@ export default {
             fetchStrategyTree(params),
             fetchStrategyElectricityPrice({ stationId: this.query.stationId || this.meta.defaultStationId }),
             fetchStrategyList({
-              region: this.query.region,
+              resourceUnitId: this.query.resourceUnitId,
               stationId: this.query.stationId,
               type: this.query.type
             })

@@ -1,10 +1,15 @@
 <template>
   <section class="strategy-filter-bar" data-testid="strategy-filter-bar">
     <el-form :inline="true" class="strategy-filter-bar__form" @submit.native.prevent>
-      <el-form-item label="区域">
-        <el-select v-model="localQuery.region" placeholder="全部区域" clearable>
+      <el-form-item label="资源单元">
+        <el-select
+          v-model="localQuery.resourceUnitId"
+          placeholder="全部资源单元"
+          clearable
+          @change="handleResourceUnitChange"
+        >
           <el-option
-            v-for="item in regionOptions"
+            v-for="item in resourceUnitOptions"
             :key="item.value"
             :label="item.label"
             :value="item.value"
@@ -15,7 +20,7 @@
       <el-form-item label="电站">
         <el-select v-model="localQuery.stationId" placeholder="全部电站" clearable>
           <el-option
-            v-for="item in stationOptions"
+            v-for="item in filteredStationOptions"
             :key="item.value"
             :label="item.label"
             :value="item.value"
@@ -86,39 +91,29 @@ export default {
     },
     query: {
       type: Object,
-      default: function () {
-        return {}
-      }
+      default: function () { return {} }
     },
-    regionOptions: {
+    resourceUnitOptions: {
       type: Array,
-      default: function () {
-        return []
-      }
+      default: function () { return [] }
     },
-    stationOptions: {
+    allStationOptions: {
       type: Array,
-      default: function () {
-        return []
-      }
+      default: function () { return [] }
     },
     typeOptions: {
       type: Array,
-      default: function () {
-        return []
-      }
+      default: function () { return [] }
     },
     statusOptions: {
       type: Array,
-      default: function () {
-        return []
-      }
+      default: function () { return [] }
     }
   },
   data() {
     return {
       localQuery: {
-        region: '',
+        resourceUnitId: '',
         stationId: '',
         type: '',
         status: '',
@@ -127,21 +122,28 @@ export default {
       }
     }
   },
+  computed: {
+    filteredStationOptions() {
+      var ruId = this.localQuery.resourceUnitId
+      if (!ruId) return this.allStationOptions
+      return this.allStationOptions.filter(function (s) { return s.companyId === ruId })
+    }
+  },
   watch: {
     query: {
       immediate: true,
       deep: true,
       handler(value) {
-        this.localQuery = {
-          ...this.localQuery,
-          ...value
-        }
+        this.localQuery = Object.assign({}, this.localQuery, value)
       }
     }
   },
   methods: {
+    handleResourceUnitChange() {
+      this.localQuery.stationId = ''
+    },
     emitSearch() {
-      this.$emit('search', { ...this.localQuery })
+      this.$emit('search', Object.assign({}, this.localQuery))
     }
   }
 }

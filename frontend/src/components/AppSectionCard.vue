@@ -42,6 +42,17 @@ export default {
   border: 1px solid var(--pvms-border-soft);
   background: var(--pvms-panel);
   box-shadow: var(--pvms-shadow-soft);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.app-section-card__content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .app-section-card__header {

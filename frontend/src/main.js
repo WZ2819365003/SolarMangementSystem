@@ -25,7 +25,7 @@ function render(props = {}) {
   const { container, baseUrl = '/' } = props
 
   initializeHostBridge(props)
-  router = createRouter(window.__POWERED_BY_QIANKUN__ ? baseUrl : '/')
+  router = createRouter(window.__POWERED_BY_QIANKUN__ ? baseUrl : '/pvms/')
   store = createStore()
   store.dispatch('initApp', props)
 

@@ -25,18 +25,30 @@
 
     <!-- Station Table -->
     <app-section-card title="电站可调能力明细">
-      <el-table :data="stationRows" size="mini" stripe>
-        <el-table-column prop="name" label="电站" min-width="160" />
-        <el-table-column prop="currentAdj" label="当前可调(MW)" width="130" align="right" />
-        <el-table-column prop="predicted4h" label="4h预测(MW)" width="130" align="right" />
-        <el-table-column prop="maxUp" label="可上调(MW)" width="120" align="right" />
-        <el-table-column prop="maxDown" label="可下调(MW)" width="120" align="right" />
-        <el-table-column prop="status" label="状态" width="100">
+      <el-table :data="pagedStationRows" size="mini" stripe style="width: 100%;">
+        <el-table-column prop="name" label="电站" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="currentAdj" label="当前可调(MW)" min-width="130" align="right" />
+        <el-table-column prop="predicted4h" label="4h预测(MW)" min-width="130" align="right" />
+        <el-table-column prop="maxUp" label="可上调(MW)" min-width="120" align="right" />
+        <el-table-column prop="maxDown" label="可下调(MW)" min-width="120" align="right" />
+        <el-table-column prop="status" label="状态" min-width="100">
           <template slot-scope="{ row }">
             <el-tag :type="row.statusType" size="mini">{{ row.statusLabel }}</el-tag>
           </template>
         </el-table-column>
       </el-table>
+      <el-pagination
+        small
+        background
+        layout="total, sizes, prev, pager, next"
+        :page-sizes="[8, 15, 30]"
+        :page-size="adjPageSize"
+        :current-page="adjCurrentPage"
+        :total="stationRows.length"
+        style="margin-top: 12px; text-align: right;"
+        @size-change="val => { adjPageSize = val; adjCurrentPage = 1 }"
+        @current-change="val => { adjCurrentPage = val }"
+      />
     </app-section-card>
   </div>
 </template>
@@ -69,6 +81,13 @@ export default {
     }
   },
 
+  data() {
+    return {
+      adjCurrentPage: 1,
+      adjPageSize: 8
+    }
+  },
+
   computed: {
     kpis() {
       return (this.viewData && this.viewData.kpis) || {}
@@ -86,6 +105,11 @@ export default {
 
     stationRows() {
       return (this.viewData && this.viewData.stationTable) || []
+    },
+
+    pagedStationRows() {
+      const start = (this.adjCurrentPage - 1) * this.adjPageSize
+      return this.stationRows.slice(start, start + this.adjPageSize)
     }
   },
 

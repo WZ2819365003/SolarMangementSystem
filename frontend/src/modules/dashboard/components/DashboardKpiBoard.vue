@@ -106,6 +106,13 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  flex: 1;
+}
+
+.dashboard-kpi-board__group {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .dashboard-kpi-board__group-label {
@@ -131,7 +138,9 @@ export default {
 .dashboard-kpi-board__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
   gap: 12px;
+  flex: 1;
 }
 
 .dashboard-kpi-board__tile {

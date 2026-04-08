@@ -69,14 +69,16 @@ public class ForecastDataService {
 
     public Map<String, Object> getMeta() {
         List<ForecastStationMapper.StationRow> stations = stationMapper.findAll();
-        LinkedHashSet<String> regions = stations.stream()
-            .map(ForecastStationMapper.StationRow::region)
-            .collect(Collectors.toCollection(LinkedHashSet::new));
+        LinkedHashMap<String, String> ruMap = new LinkedHashMap<>();
+        stations.forEach(s -> ruMap.put(s.companyId(), s.companyName()));
+        List<Map<String, Object>> resourceUnits = ruMap.entrySet().stream()
+            .map(e -> orderedMap("id", (Object) e.getKey(), "name", e.getValue()))
+            .toList();
 
         return orderedMap(
             "defaultDate", DEFAULT_BIZ_DATE.toString(),
             "defaultStationId", stations.isEmpty() ? "" : stations.getFirst().id(),
-            "regions", new ArrayList<>(regions),
+            "resourceUnits", resourceUnits,
             "stations", stations.stream().map(this::mapStationMeta).toList(),
             "forecastTypes", List.of(
                 orderedMap("label", "日前预测", "value", "day-ahead"),
@@ -386,8 +388,9 @@ public class ForecastDataService {
         return orderedMap(
             "id", station.id(),
             "name", station.name(),
-            "region", station.region(),
+            "companyId", station.companyId(),
             "companyName", station.companyName(),
+            "region", station.region(),
             "status", station.status(),
             "dataQuality", station.dataQuality(),
             "capacityMw", round(station.capacityKwp() / 1000.0, 2)

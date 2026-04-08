@@ -25,13 +25,25 @@
       </app-section-card>
 
       <app-section-card title="电站预测明细">
-        <el-table :data="stationRows" size="mini" stripe>
-          <el-table-column prop="name" label="电站" min-width="160" />
-          <el-table-column prop="predicted" label="预测出力(MW)" width="130" align="right" />
-          <el-table-column prop="actual" label="实际出力(MW)" width="130" align="right" />
-          <el-table-column prop="deviation" label="偏差(MW)" width="100" align="right" />
-          <el-table-column prop="accuracy" label="精度(%)" width="100" align="right" />
+        <el-table :data="pagedStationRows" size="mini" stripe style="width: 100%;">
+          <el-table-column prop="name" label="电站" min-width="160" show-overflow-tooltip />
+          <el-table-column prop="predicted" label="预测出力(MW)" min-width="130" align="right" />
+          <el-table-column prop="actual" label="实际出力(MW)" min-width="130" align="right" />
+          <el-table-column prop="deviation" label="偏差(MW)" min-width="100" align="right" />
+          <el-table-column prop="accuracy" label="精度(%)" min-width="100" align="right" />
         </el-table>
+        <el-pagination
+          small
+          background
+          layout="total, sizes, prev, pager, next"
+          :page-sizes="[6, 10, 20]"
+          :page-size="stationPageSize"
+          :current-page="stationCurrentPage"
+          :total="stationRows.length"
+          style="margin-top: 12px; text-align: right;"
+          @size-change="val => { stationPageSize = val; stationCurrentPage = 1 }"
+          @current-change="val => { stationCurrentPage = val }"
+        />
       </app-section-card>
     </div>
   </div>
@@ -76,7 +88,9 @@ export default {
   data: function () {
     return {
       comparisonInstance: null,
-      heatmapInstance: null
+      heatmapInstance: null,
+      stationCurrentPage: 1,
+      stationPageSize: 6
     }
   },
 
@@ -97,6 +111,11 @@ export default {
 
     stationRows: function () {
       return this.viewData.stationTable || []
+    },
+
+    pagedStationRows: function () {
+      var start = (this.stationCurrentPage - 1) * this.stationPageSize
+      return this.stationRows.slice(start, start + this.stationPageSize)
     }
   },
 

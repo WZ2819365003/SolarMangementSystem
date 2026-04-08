@@ -13,16 +13,17 @@ services:
       MYSQL_CHARSET: utf8mb4
       MYSQL_COLLATION: utf8mb4_unicode_ci
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - pvms-mysql-data:/var/lib/mysql
-      # 初始化脚本：按文件名顺序执行
-      - ../backend/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
-      - ../backend/src/main/resources/mysql-data.sql:/docker-entrypoint-initdb.d/02_data.sql:ro
-    command: >
-      --character-set-server=utf8mb4
-      --collation-server=utf8mb4_unicode_ci
-      --default-time-zone=+08:00
+      # SQL 文件挂载到 /sql/，由 init.sh 以 utf8mb4 字符集执行
+      - ../backend/src/main/resources/schema.sql:/sql/01_schema.sql:ro
+      - ../backend/src/main/resources/mysql-data.sql:/sql/02_data.sql:ro
+      - ./init.sh:/docker-entrypoint-initdb.d/init.sh:ro
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+08:00
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456"]
       interval: 10s

@@ -34,7 +34,7 @@
     <!-- Station table -->
     <div class="production-load-view__table-wrap">
       <el-table
-        :data="filteredStations"
+        :data="pagedStations"
         size="mini"
         stripe
         :header-cell-style="headerCellStyle"
@@ -65,6 +65,18 @@
           </template>
         </el-table-column>
       </el-table>
+      <el-pagination
+        small
+        background
+        layout="total, sizes, prev, pager, next"
+        :page-sizes="[8, 15, 30]"
+        :page-size="pageSize"
+        :current-page="currentPage"
+        :total="filteredStations.length"
+        style="margin-top: 12px; text-align: right;"
+        @size-change="handleSizeChange"
+        @current-change="handlePageChange"
+      />
     </div>
 
     <!-- Grid Interaction Drawer -->
@@ -76,8 +88,10 @@
       append-to-body
       custom-class="production-load-view__drawer"
       :close-on-click-modal="true"
+      @opened="onDrawerOpened"
+      @close="onDrawerClose"
     >
-      <div class="production-load-view__drawer-body">
+      <div class="production-load-view__drawer-body" v-loading="dialogLoading" element-loading-background="rgba(9,29,67,0.6)" element-loading-text="加载中…">
         <div class="production-load-view__dialog-kpis">
           <div class="production-load-view__dialog-kpi" v-for="kpi in dialogKpis" :key="kpi.key">
             <span class="production-load-view__dialog-kpi-label">{{ kpi.label }}</span>
@@ -92,6 +106,7 @@
 
 <script>
 import * as echarts from 'echarts'
+import { fetchProductionMonitorGridInteraction } from '@/api/pvms'
 
 const STATUS_TYPE_MAP = { normal: 'success', warning: 'warning', fault: 'danger', offline: 'info', maintenance: '' }
 const STATUS_LABEL_MAP = { normal: '正常', warning: '告警', fault: '故障', offline: '离线', maintenance: '检修' }
@@ -106,16 +121,27 @@ export default {
     return {
       searchKeyword: '',
       statusFilter: '',
+      currentPage: 1,
+      pageSize: 8,
       dialogVisible: false,
       dialogTitle: '',
       dialogKpis: [],
       dialogChartData: null,
+      dialogLoading: false,
+      drawerReady: false,
       chart: null,
       headerCellStyle: {
         background: 'rgba(255, 255, 255, 0.04)',
         color: 'rgba(255, 255, 255, 0.58)',
         borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
         fontSize: '12px'
+      }
+    }
+  },
+  watch: {
+    dialogChartData(val) {
+      if (this.drawerReady) {
+        this.$nextTick(() => { this.renderDialogChart() })
       }
     }
   },
@@ -142,24 +168,29 @@ export default {
         if (sf && item.status !== sf) return false
         return true
       })
-    }
-  },
-  watch: {
-    dialogVisible(val) {
-      if (val) {
-        this.$nextTick(function () { this.renderDialogChart() }.bind(this))
-      } else {
-        if (this.chart) {
-          this.chart.dispose()
-          this.chart = null
-        }
-      }
+    },
+    pagedStations() {
+      var start = (this.currentPage - 1) * this.pageSize
+      return this.filteredStations.slice(start, start + this.pageSize)
     }
   },
   methods: {
+    handleSizeChange(val) { this.pageSize = val; this.currentPage = 1 },
+    handlePageChange(val) { this.currentPage = val },
+    disposeDialogChart() {
+      if (this.chart) { this.chart.dispose(); this.chart = null }
+    },
+    onDrawerOpened() {
+      this.drawerReady = true
+      this.renderDialogChart()
+    },
+    onDrawerClose() {
+      this.drawerReady = false
+      this.disposeDialogChart()
+    },
     resolveStatusType(status) { return STATUS_TYPE_MAP[status] !== undefined ? STATUS_TYPE_MAP[status] : 'info' },
     resolveStatusLabel(status) { return STATUS_LABEL_MAP[status] || status || '--' },
-    openGridInteraction(row) {
+    async openGridInteraction(row) {
       this.dialogTitle = row.name + ' — 电网交互曲线'
       this.dialogKpis = [
         { key: 'load', label: '当前负荷', value: row.loadKw, unit: 'kW' },
@@ -167,13 +198,29 @@ export default {
         { key: 'adj', label: '可调功率', value: row.adjustableKw, unit: 'kW' },
         { key: 'ramp', label: '爬坡速率', value: row.maxRampRate, unit: 'kW/min' }
       ]
-      this.dialogChartData = row.gridInteraction || null
+      this.dialogChartData = null
+      this.dialogLoading = true
       this.dialogVisible = true
+      try {
+        var res = await fetchProductionMonitorGridInteraction({ stationId: row.id })
+        this.dialogChartData = (res && res.data) ? res.data : null
+      } catch (e) {
+        this.$message && this.$message.error('电网交互数据加载失败')
+        this.dialogChartData = null
+      } finally {
+        this.dialogLoading = false
+      }
     },
     renderDialogChart() {
-      if (!this.$refs.dialogChart || !this.dialogChartData) return
+      if (!this.$refs.dialogChart) return
+      if (this.dialogLoading) return
+      if (!this.dialogChartData) {
+        // no chart data — show placeholder text
+        this.$refs.dialogChart.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.4);font-size:14px;">暂无电网交互曲线数据</div>'
+        return
+      }
       if (this.chart) this.chart.dispose()
-      this.chart = echarts.init(this.$refs.dialogChart)
+      this.chart = echarts.init(this.$refs.dialogChart, null, { renderer: 'canvas' })
       var d = this.dialogChartData
       var colors = ['#1a8dff', '#06d6a0', '#ffd166', '#ef476f']
       var chartSeries = d.series.map(function (s, idx) {
@@ -226,10 +273,13 @@ export default {
         }],
         series: chartSeries
       })
+      // resize after option is set to ensure container has the right dimensions
+      var self = this
+      setTimeout(function () { if (self.chart) self.chart.resize() }, 60)
     }
   },
   beforeDestroy() {
-    if (this.chart) { this.chart.dispose(); this.chart = null }
+    this.disposeDialogChart()
   }
 }
 </script>
@@ -348,9 +398,12 @@ export default {
   }
 
   &__drawer-body {
-    padding: 20px 24px;
+    padding: 20px 24px 16px;
     height: 100%;
-    overflow-y: auto;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
   &__dialog-kpis {
@@ -358,6 +411,7 @@ export default {
     grid-template-columns: repeat(4, 1fr);
     gap: 12px;
     margin-bottom: 16px;
+    flex-shrink: 0;
   }
 
   &__dialog-kpi {
@@ -384,8 +438,8 @@ export default {
 
   &__dialog-chart {
     width: 100%;
-    height: calc(100% - 120px);
-    min-height: 450px;
+    flex: 1;
+    min-height: 0;
   }
 }
 </style>

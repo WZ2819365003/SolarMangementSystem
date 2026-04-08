@@ -264,10 +264,9 @@ export default {
     },
     async loadAlarmFeed(level = this.alarmLevel) {
       try {
-        const response = await fetchDashboardAlarmFeed({
-          level,
-          stationId: this.selectedStationId
-        })
+        // Alarm feed is always global — do not pass stationId.
+        // The summary badge counts are also global, so they must match.
+        const response = await fetchDashboardAlarmFeed({ level })
         this.alarmPayload = response.data
       } catch (e) {
         console.error('[Dashboard] 加载告警数据失败', e)

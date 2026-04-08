@@ -10,8 +10,8 @@
 
     <forecast-filter-bar
       :query="query"
-      :region-options="meta.regionOptions"
-      :station-options="meta.stationOptions"
+      :resource-unit-options="meta.resourceUnitOptions"
+      :all-station-options="meta.allStations"
       @search="handleSearch"
       @refresh="loadCurrentView"
     />
@@ -63,11 +63,11 @@ export default {
         { key: 'accuracy', label: '精度评估', path: '/forecast/accuracy' }
       ],
       meta: {
-        regionOptions: [],
-        stationOptions: []
+        resourceUnitOptions: [],
+        allStations: []
       },
       query: {
-        region: '',
+        resourceUnitId: '',
         stationId: '',
         dateRange: [],
         forecastType: 'day-ahead'
@@ -98,11 +98,11 @@ export default {
       try {
         var res = await fetchForecastMeta()
         if (res.data) {
-          this.meta.regionOptions = (res.data.regions || []).map(function (r) {
-            return { label: r, value: r }
+          this.meta.resourceUnitOptions = (res.data.resourceUnits || []).map(function (ru) {
+            return { label: ru.name, value: ru.id, id: ru.id }
           })
-          this.meta.stationOptions = (res.data.stations || []).map(function (s) {
-            return { label: s.name, value: s.id }
+          this.meta.allStations = (res.data.stations || []).map(function (s) {
+            return { label: s.name, value: s.id, companyId: s.companyId }
           })
         }
       } catch (e) {
@@ -114,7 +114,7 @@ export default {
       try {
         var key = this.currentViewKey
         var params = {
-          region: this.query.region,
+          resourceUnitId: this.query.resourceUnitId,
           stationId: this.query.stationId,
           forecastType: this.query.forecastType
         }

@@ -236,17 +236,27 @@ public class DashboardMapDataService {
         double totalEnergy = stations.stream().mapToDouble(DashboardStationGeoMapper.StationGeoRow::todayEnergyKwh).sum();
         double totalRevenue = stations.stream().mapToDouble(DashboardStationGeoMapper.StationGeoRow::todayRevenueCny).sum();
         double avgAvailability = stations.stream().mapToDouble(DashboardStationGeoMapper.StationGeoRow::availability).average().orElse(0);
+        String updatedAt = LocalDateTime.now().format(DATE_TIME_FORMATTER);
         return orderedMap(
             "focusLabel", focusLabel,
+            "updatedAt", updatedAt,
             "items", List.of(
-                kpiItem("capacity", "装机容量", round(totalCapacity / 1000, 2), "MW"),
-                kpiItem("power", "实时功率", round(totalPower / 1000, 2), "MW"),
-                kpiItem("energy", "今日发电量", round(totalEnergy / 1000, 1), "MWh"),
-                kpiItem("revenue", "今日收益", round(totalRevenue, 0), "元"),
-                kpiItem("hours", "等效利用小时", round(totalPower > 0 ? totalEnergy / totalPower : 0, 1), "h"),
-                kpiItem("availability", "平均可用率", round(avgAvailability, 1), "%"),
-                kpiItem("co2", "CO₂减排", round(totalEnergy * 0.785 / 1000, 1), "t"),
-                kpiItem("deviation", "功率偏差", round(3.2, 1), "%")
+                kpiItem("capacity", "装机容量", round(totalCapacity / 1000, 2), "MW",
+                    "el-icon-s-promotion", "blue", "运行容量", "当前全部电站额定容量之和"),
+                kpiItem("power", "实时功率", round(totalPower / 1000, 2), "MW",
+                    "el-icon-s-data", "teal", "运行容量", "实时综合出力"),
+                kpiItem("energy", "今日发电量", round(totalEnergy / 1000, 1), "MWh",
+                    "el-icon-s-marketing", "emerald", "发电与收益", "今日累计发电量"),
+                kpiItem("revenue", "今日收益", round(totalRevenue, 0), "元",
+                    "el-icon-coin", "orange", "发电与收益", "含上网电费与补贴"),
+                kpiItem("hours", "等效利用小时", round(totalPower > 0 ? totalEnergy / totalPower : 0, 1), "h",
+                    "el-icon-time", "blue", "运行质量", "反映设备运行效率"),
+                kpiItem("availability", "平均可用率", round(avgAvailability, 1), "%",
+                    "el-icon-s-operation", "teal", "运行质量", "综合可用性指标"),
+                kpiItem("co2", "CO₂减排", round(totalEnergy * 0.785 / 1000, 1), "t",
+                    "el-icon-cloudy", "emerald", "环境效益", "等效标准煤节约量"),
+                kpiItem("deviation", "功率偏差", round(3.2, 1), "%",
+                    "el-icon-warning-outline", "orange", "环境效益", "实际 vs 计划偏差率")
             )
         );
     }
@@ -262,30 +272,57 @@ public class DashboardMapDataService {
         double cap = station != null ? station.capacityKwp() : all.stream().mapToDouble(DashboardStationGeoMapper.StationGeoRow::capacityKwp).sum();
         long seed = currentDate.hashCode();
         Random rng = new Random(seed);
-        List<Double> actual = IntStream.range(0, 96).mapToObj(i -> round(solarCurve(i, cap, rng, 0.9), 1)).toList();
-        List<Double> plan = IntStream.range(0, 96).mapToObj(i -> round(solarCurve(i, cap, rng, 1.0), 1)).toList();
-        return orderedMap("currentDate", currentDate, "stationName", name, "actual", actual, "plan", plan);
+        // Build {time, value} point lists (96 × 15-min slots per day)
+        Random rng1 = new Random(seed + 1);
+        Random rng2 = new Random(seed + 2);
+        Random rng3 = new Random(seed + 3);
+        List<Map<String, Object>> actual     = buildCurvePoints(currentDate, 96, i -> round(solarCurve(i, cap, rng, 0.9), 1));
+        List<Map<String, Object>> plan       = buildCurvePoints(currentDate, 96, i -> round(solarCurve(i, cap, rng1, 1.0), 1));
+        List<Map<String, Object>> forecast   = buildCurvePoints(currentDate, 96, i -> round(solarCurve(i, cap, rng2, 0.95), 1));
+        List<Map<String, Object>> irradiance = buildCurvePoints(currentDate, 96, i -> round(irradianceCurve(i, rng3), 1));
+        return orderedMap("currentDate", currentDate, "stationName", name,
+            "actual", actual, "plan", plan, "forecast", forecast, "irradiance", irradiance);
+    }
+
+    private List<Map<String, Object>> buildCurvePoints(String date, int slots, java.util.function.IntToDoubleFunction valueMapper) {
+        return IntStream.range(0, slots).mapToObj(i -> {
+            String time = date + "T" + String.format("%02d:%02d:00", i / 4, (i % 4) * 15);
+            return orderedMap("time", (Object) time, "value", valueMapper.applyAsDouble(i));
+        }).toList();
+    }
+
+    private double irradianceCurve(int slot, Random rng) {
+        if (slot < 24 || slot > 72) return 0.0;
+        double x = (slot - 48) / 24.0;
+        double base = Math.max(0, 1000 * (1 - 4 * x * x));
+        return base * (0.9 + 0.1 * rng.nextDouble());
     }
 
     // ============= Station Ranking =============
     public Map<String, Object> getStationRanking(String metric) {
         String m = (metric != null && !metric.isBlank()) ? metric : "energy";
+        String unit = switch (m) {
+            case "hours" -> "h";
+            case "pr" -> "%";
+            default -> "kWh";
+        };
         List<DashboardStationGeoMapper.StationGeoRow> stations = stationGeoMapper.findAll();
         List<Map<String, Object>> rankings = stations.stream().map(s -> {
             double value = switch (m) {
-                case "hours" -> s.todayEnergyKwh() / Math.max(s.capacityKwp(), 1) * 24;
+                case "hours" -> round(s.todayEnergyKwh() / Math.max(s.capacityKwp(), 1) * 24, 1);
                 case "pr" -> s.availability();
                 default -> s.todayEnergyKwh();
             };
-            return orderedMap("id", (Object) s.id(), "name", s.name(), "value", round(value, 1));
+            return orderedMap("id", (Object) s.id(), "stationName", s.name(), "value", round(value, 1));
         }).sorted((a, b) -> Double.compare((double) b.get("value"), (double) a.get("value"))).toList();
         return orderedMap(
             "currentMetric", m,
+            "unit", unit,
             "rankings", rankings,
             "metricOptions", List.of(
-                orderedMap("key", "energy", "label", "发电量"),
-                orderedMap("key", "hours", "label", "利用小时"),
-                orderedMap("key", "pr", "label", "PR值")
+                orderedMap("value", "energy", "label", "发电量"),
+                orderedMap("value", "hours", "label", "利用小时"),
+                orderedMap("value", "pr", "label", "PR值")
             )
         );
     }
@@ -342,8 +379,10 @@ public class DashboardMapDataService {
         return Math.max(0, curve);
     }
 
-    private Map<String, Object> kpiItem(String key, String label, double value, String unit) {
-        return orderedMap("key", key, "label", label, "value", value, "unit", unit);
+    private Map<String, Object> kpiItem(String key, String label, double value, String unit,
+                                         String icon, String accent, String group, String helper) {
+        return orderedMap("key", key, "label", label, "value", value, "unit", unit,
+            "icon", icon, "accent", accent, "group", group, "helper", helper);
     }
 
     private record StatusMeta(String label, String color) {
