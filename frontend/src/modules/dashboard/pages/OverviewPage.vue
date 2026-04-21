@@ -78,6 +78,7 @@
 </template>
 
 <script>
+import { mapState, mapActions } from 'vuex'
 import AppPageHero from '@/components/AppPageHero.vue'
 import {
   fetchAdjustableCapacity,
@@ -144,6 +145,9 @@ export default {
     }
   },
   computed: {
+    ...mapState('stationContext', {
+      contextStationId: state => state.stationId
+    }),
     stationOptions() {
       return this.mapPayload.stations || []
     },
@@ -193,6 +197,7 @@ export default {
     await this.bootstrap()
   },
   methods: {
+    ...mapActions('stationContext', ['focusStation', 'registerStations']),
     async bootstrap() {
       await Promise.all([
         this.loadMap(),
@@ -200,7 +205,13 @@ export default {
         this.loadAlarmFeed()
       ])
 
-      if (!this.selectedStationId && this.stationOptions.length) {
+      // Publish station catalogue to global store so other pages can share it
+      this.registerStations(this.stationOptions)
+
+      // Honor previously-focused station from global store if available
+      if (this.contextStationId && this.stationOptions.some(s => s.id === this.contextStationId)) {
+        this.selectedStationId = this.contextStationId
+      } else if (!this.selectedStationId && this.stationOptions.length) {
         this.selectedStationId = this.stationOptions[0].id
       }
 
@@ -306,6 +317,17 @@ export default {
       const stationChanged = stationId !== this.selectedStationId
       this.selectedStationId = stationId
       this.mapFocusToken += 1
+
+      // Push selection to global store so other pages see the same focus
+      const station = this.stationOptions.find(s => s.id === stationId)
+      if (station) {
+        this.focusStation({
+          id: station.id,
+          name: station.name,
+          regionId: station.regionId,
+          regionName: station.regionName
+        })
+      }
 
       if (!stationChanged) {
         return

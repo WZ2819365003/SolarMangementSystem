@@ -1,0 +1,60 @@
+# =====================================================================
+# PVMS v2.2.0 — 生产部署编排（ARM64）
+# =====================================================================
+# 先执行：docker load -i pvms-images-2.2.0-arm64.tar.gz
+# 再执行：docker compose up -d
+# =====================================================================
+name: pvms
+
+services:
+  mysql:
+    image: pvms-mysql:2.2.0
+    platform: linux/arm64
+    container_name: pvms-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_DATABASE: pvms
+      TZ: Asia/Shanghai
+    ports:
+      - "3307:3306"
+    volumes:
+      - pvms-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    image: pvms-backend:2.2.0
+    platform: linux/arm64
+    container_name: pvms-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/pvms?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: "123456"
+      JAVA_OPTS: "-Xms256m -Xmx768m"
+      TZ: Asia/Shanghai
+    ports:
+      - "8091:8091"
+
+  frontend:
+    image: pvms-frontend:2.2.0
+    platform: linux/arm64
+    container_name: pvms-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "6618:80"
+    environment:
+      TZ: Asia/Shanghai
+
+volumes:
+  pvms-mysql-data:
+    name: pvms-mysql-data

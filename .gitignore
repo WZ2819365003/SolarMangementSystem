@@ -39,3 +39,11 @@ temp/
 
 # HVPP test files
 HVPP/backend/target/
+
+# Release artifacts (too large for git; uploaded as GitHub release assets)
+release/*.tar.gz
+release/*.tar
+backend/target/
+frontend/tests/playwright/output/
+frontend/tests/playwright/test-results/
+.claude/
