@@ -44,13 +44,16 @@ public class StrategyController {
     }
 
     @GetMapping("/tree")
-    public ApiResponse<Map<String, Object>> getTree() {
-        return ApiResponse.success(strategyDataService.getTree());
+    public ApiResponse<Map<String, Object>> getTree(@RequestParam(required = false) String resourceUnitId) {
+        return ApiResponse.success(strategyDataService.getTree(resourceUnitId));
     }
 
     @GetMapping("/kpi")
-    public ApiResponse<Map<String, Object>> getKpi() {
-        return ApiResponse.success(strategyDataService.getKpi());
+    public ApiResponse<Map<String, Object>> getKpi(
+        @RequestParam(required = false) String resourceUnitId,
+        @RequestParam(required = false) String stationId
+    ) {
+        return ApiResponse.success(strategyDataService.getKpi(resourceUnitId, stationId));
     }
 
     @GetMapping("/list")
@@ -58,10 +61,11 @@ public class StrategyController {
         @RequestParam(required = false) String status,
         @RequestParam(required = false) String type,
         @RequestParam(required = false) String region,
+        @RequestParam(required = false) String resourceUnitId,
         @RequestParam(required = false) String stationId,
         @RequestParam(required = false) String keyword
     ) {
-        return ApiResponse.success(strategyDataService.getList(status, type, region, stationId, keyword));
+        return ApiResponse.success(strategyDataService.getList(status, type, region, resourceUnitId, stationId, keyword));
     }
 
     @GetMapping("/detail")
@@ -118,20 +122,22 @@ public class StrategyController {
     public ApiResponse<Map<String, Object>> getRevenueSummary(
         @RequestParam(required = false) String region,
         @RequestParam(required = false) String type,
+        @RequestParam(required = false) String resourceUnitId,
         @RequestParam(required = false) String stationId
     ) {
-        return ApiResponse.success(strategyRevenueService.getRevenueSummary(region, type, stationId));
+        return ApiResponse.success(strategyRevenueService.getRevenueSummary(region, type, resourceUnitId, stationId));
     }
 
     @GetMapping("/revenue/detail")
     public ApiResponse<Map<String, Object>> getRevenueDetail(
         @RequestParam(required = false) String region,
         @RequestParam(required = false) String type,
+        @RequestParam(required = false) String resourceUnitId,
         @RequestParam(required = false) String stationId,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
     ) {
-        return ApiResponse.success(strategyRevenueService.getRevenueDetail(region, type, stationId, startDate, endDate));
+        return ApiResponse.success(strategyRevenueService.getRevenueDetail(region, type, resourceUnitId, stationId, startDate, endDate));
     }
 
     @GetMapping("/compare")

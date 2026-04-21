@@ -23,11 +23,12 @@ public class StrategyRevenueService {
         this.revenueMapper = revenueMapper;
     }
 
-    public Map<String, Object> getRevenueSummary(String region, String type, String stationId) {
+    public Map<String, Object> getRevenueSummary(String region, String type, String resourceUnitId, String stationId) {
         List<StrategyRevenueMapper.RevenueDailyRow> filteredRows = filterRevenueRows(
             revenueMapper.findByDateRange(StrategySupport.DEFAULT_BIZ_DATE.minusDays(13), StrategySupport.DEFAULT_BIZ_DATE),
             region,
             type,
+            resourceUnitId,
             stationId
         );
 
@@ -86,13 +87,14 @@ public class StrategyRevenueService {
         );
     }
 
-    public Map<String, Object> getRevenueDetail(String region, String type, String stationId, LocalDate startDate, LocalDate endDate) {
+    public Map<String, Object> getRevenueDetail(String region, String type, String resourceUnitId, String stationId, LocalDate startDate, LocalDate endDate) {
         LocalDate resolvedEndDate = endDate == null ? StrategySupport.DEFAULT_BIZ_DATE : endDate;
         LocalDate resolvedStartDate = startDate == null ? resolvedEndDate.minusDays(13) : startDate;
         List<StrategyRevenueMapper.RevenueDailyRow> rows = filterRevenueRows(
             revenueMapper.findByDateRange(resolvedStartDate, resolvedEndDate),
             region,
             type,
+            resourceUnitId,
             stationId
         ).stream()
             .sorted(Comparator.comparing(StrategyRevenueMapper.RevenueDailyRow::bizDate).reversed()
@@ -136,9 +138,10 @@ public class StrategyRevenueService {
                     "name", latest.strategyName(),
                     "type", latest.type(),
                     "typeLabel", StrategySupport.typeLabel(latest.type()),
-                    "stationId", latest.stationId(),
-                    "stationName", latest.stationName(),
-                    "totalRevenue", StrategySupport.round(totalActual, 2),
+            "stationId", latest.stationId(),
+            "stationName", latest.stationName(),
+            "resourceUnitId", latest.resourceUnitId(),
+            "totalRevenue", StrategySupport.round(totalActual, 2),
                     "estimatedRevenue", StrategySupport.round(totalEstimated, 2),
                     "achievementRate", totalEstimated == 0 ? 0 : StrategySupport.round(totalActual * 100.0 / totalEstimated, 1)
                 );
@@ -159,11 +162,13 @@ public class StrategyRevenueService {
         List<StrategyRevenueMapper.RevenueDailyRow> rows,
         String region,
         String type,
+        String resourceUnitId,
         String stationId
     ) {
         return rows.stream()
             .filter(item -> region == null || region.isBlank() || Objects.equals(item.region(), region))
             .filter(item -> type == null || type.isBlank() || Objects.equals(item.type(), type))
+            .filter(item -> resourceUnitId == null || resourceUnitId.isBlank() || Objects.equals(item.resourceUnitId(), resourceUnitId))
             .filter(item -> stationId == null || stationId.isBlank() || Objects.equals(item.stationId(), stationId))
             .toList();
     }
@@ -177,6 +182,7 @@ public class StrategyRevenueService {
             "status", row.status(),
             "stationId", row.stationId(),
             "stationName", row.stationName(),
+            "resourceUnitId", row.resourceUnitId(),
             "companyId", row.companyId(),
             "companyName", row.companyName(),
             "region", row.region(),

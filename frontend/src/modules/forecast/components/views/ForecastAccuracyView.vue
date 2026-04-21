@@ -31,12 +31,12 @@
       </app-section-card>
 
       <app-section-card title="月度精度对比">
-        <el-table :data="monthlyRows" size="mini" stripe>
-          <el-table-column prop="month" label="月份" width="100" />
-          <el-table-column prop="mae" label="MAE(MW)" width="110" align="right" />
-          <el-table-column prop="rmse" label="RMSE(MW)" width="110" align="right" />
-          <el-table-column prop="accuracy" label="精度(%)" width="100" align="right" />
-          <el-table-column prop="improvement" label="环比" width="100" align="right">
+        <el-table :data="pagedMonthlyRows" size="mini" stripe style="width: 100%;">
+          <el-table-column prop="month" label="月份" min-width="100" />
+          <el-table-column prop="mae" label="MAE(MW)" min-width="110" align="right" />
+          <el-table-column prop="rmse" label="RMSE(MW)" min-width="110" align="right" />
+          <el-table-column prop="accuracy" label="精度(%)" min-width="100" align="right" />
+          <el-table-column prop="improvement" label="环比" min-width="100" align="right">
             <template slot-scope="{ row }">
               <span :style="{ color: row.improvement > 0 ? '#67c23a' : '#f56c6c' }">
                 {{ row.improvement > 0 ? '+' : '' }}{{ row.improvement }}%
@@ -44,6 +44,18 @@
             </template>
           </el-table-column>
         </el-table>
+        <el-pagination
+          small
+          background
+          layout="total, sizes, prev, pager, next"
+          :page-sizes="[6, 12, 24]"
+          :page-size="monthlyPageSize"
+          :current-page="monthlyCurrentPage"
+          :total="monthlyRows.length"
+          style="margin-top: 12px; text-align: right;"
+          @size-change="val => { monthlyPageSize = val; monthlyCurrentPage = 1 }"
+          @current-change="val => { monthlyCurrentPage = val }"
+        />
       </app-section-card>
     </div>
   </div>
@@ -89,7 +101,9 @@ export default {
     return {
       trendInstance: null,
       distInstance: null,
-      rankInstance: null
+      rankInstance: null,
+      monthlyCurrentPage: 1,
+      monthlyPageSize: 6
     }
   },
 
@@ -110,6 +124,11 @@ export default {
 
     monthlyRows: function () {
       return this.viewData.monthlyTable || []
+    },
+
+    pagedMonthlyRows: function () {
+      var start = (this.monthlyCurrentPage - 1) * this.monthlyPageSize
+      return this.monthlyRows.slice(start, start + this.monthlyPageSize)
     }
   },
 

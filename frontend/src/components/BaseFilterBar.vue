@@ -48,8 +48,9 @@
           :placeholder="field.placeholder || '全部公司'"
           clearable
           filterable
-          @change="handleHierChange('companyId', $event, field)"
+          @change="handleHierChange('companyId', $event)"
         >
+          <el-option :label="field.placeholder || '全部公司'" value="" />
           <el-option
             v-for="item in hierOptions.companies"
             :key="item.id"
@@ -65,8 +66,9 @@
           :placeholder="field.placeholder || '全部区域'"
           clearable
           filterable
-          @change="handleHierChange('regionId', $event, field)"
+          @change="handleHierChange('regionId', $event)"
         >
+          <el-option :label="field.placeholder || '全部区域'" value="" />
           <el-option
             v-for="item in hierOptions.regions"
             :key="item.id"
@@ -82,8 +84,9 @@
           :placeholder="field.placeholder || '全部电站'"
           clearable
           filterable
-          @change="handleHierChange('stationId', $event, field)"
+          @change="handleHierChange('stationId', $event)"
         >
+          <el-option :label="field.placeholder || '全部电站'" value="" />
           <el-option
             v-for="item in filteredStations"
             :key="item.id"
@@ -99,8 +102,9 @@
           :placeholder="field.placeholder || '全部资源单元'"
           clearable
           filterable
-          @change="handleHierChange('resourceUnitId', $event, field)"
+          @change="handleHierChange('resourceUnitId', $event)"
         >
+          <el-option :label="field.placeholder || '全部资源单元'" value="" />
           <el-option
             v-for="item in filteredResourceUnits"
             :key="item.id"
@@ -137,7 +141,9 @@
             v-for="item in (field.options || [])"
             :key="item.value"
             :label="item.value"
-          >{{ item.label }}</el-radio-button>
+          >
+            {{ item.label }}
+          </el-radio-button>
         </el-radio-group>
 
         <!-- Date range -->
@@ -185,7 +191,7 @@
       </el-form-item>
     </el-form>
 
-    <div class="pv-filter-bar__actions" v-if="showActions">
+    <div v-if="showActions" class="pv-filter-bar__actions">
       <slot name="actions-prepend" />
       <el-button v-if="showReset" plain size="small" icon="el-icon-refresh-left" @click="emitReset">
         重置
@@ -238,7 +244,8 @@ export default {
     showReset: { type: Boolean, default: true },
     showActions: { type: Boolean, default: true },
     // if true, emit `change` every keystroke/selection (no search button needed)
-    autoSearch: { type: Boolean, default: false }
+    autoSearch: { type: Boolean, default: false },
+    syncHierarchyFromStore: { type: Boolean, default: true }
   },
   data() {
     return {
@@ -267,14 +274,16 @@ export default {
     filteredStations() {
       const list = this.ctxStations || []
       const regionId = this.localValue.regionId
-      if (!regionId) return list
-      return list.filter(s => !s.regionId || s.regionId === regionId)
+      const resourceUnitId = this.localValue.resourceUnitId
+      return list
+        .filter(s => !regionId || !s.regionId || s.regionId === regionId)
+        .filter(s => !resourceUnitId || s.resourceUnitId === resourceUnitId)
     },
     filteredResourceUnits() {
       const list = this.ctxResourceUnits || []
-      const stationId = this.localValue.stationId
-      if (!stationId) return list
-      return list.filter(u => !u.stationId || u.stationId === stationId)
+      const regionId = this.localValue.regionId
+      if (!regionId) return list
+      return list.filter(u => !u.regionId || u.regionId === regionId)
     },
     visibleFields() {
       return this.fields.filter(f => f && !f.hidden)
@@ -291,13 +300,18 @@ export default {
       handler(v) {
         this.localValue = Object.assign(this.buildDefaults(), v || {})
         // sync hierarchy from store on first mount
-        if (!this.localValue.companyId && this.ctxCompanyId) this.localValue.companyId = this.ctxCompanyId
-        if (!this.localValue.regionId && this.ctxRegionId) this.localValue.regionId = this.ctxRegionId
-        if (!this.localValue.stationId && this.ctxStationId) this.localValue.stationId = this.ctxStationId
-        if (!this.localValue.resourceUnitId && this.ctxResourceUnitId) this.localValue.resourceUnitId = this.ctxResourceUnitId
+        if (this.syncHierarchyFromStore) {
+          if (!this.localValue.companyId && this.ctxCompanyId) this.localValue.companyId = this.ctxCompanyId
+          if (!this.localValue.regionId && this.ctxRegionId) this.localValue.regionId = this.ctxRegionId
+          if (!this.localValue.stationId && this.ctxStationId) this.localValue.stationId = this.ctxStationId
+          if (!this.localValue.resourceUnitId && this.ctxResourceUnitId) this.localValue.resourceUnitId = this.ctxResourceUnitId
+        }
       }
     },
     ctxStationId(v) {
+      if (!this.syncHierarchyFromStore) {
+        return
+      }
       if (v !== this.localValue.stationId) {
         this.$set(this.localValue, 'stationId', v)
         this.emitChange('stationId')
@@ -316,17 +330,33 @@ export default {
       })
       return defaults
     },
-    handleHierChange(key, v, field) {
+    handleHierChange(key, v) {
       this.localValue[key] = v
       // sync to global store
       if (key === 'stationId') {
         const station = this.ctxStations.find(s => s.id === v)
         if (v && station) {
-          this.focusStation({ id: v, name: station.name, regionId: station.regionId, regionName: station.regionName })
+          if (station.resourceUnitId && this.localValue.resourceUnitId !== station.resourceUnitId) {
+            this.$set(this.localValue, 'resourceUnitId', station.resourceUnitId)
+          }
+          this.focusStation({
+            id: v,
+            name: station.name,
+            regionId: station.regionId,
+            regionName: station.regionName,
+            resourceUnitId: station.resourceUnitId,
+            resourceUnitName: station.resourceUnitName
+          })
         }
       }
       if (key === 'resourceUnitId') {
         const unit = this.ctxResourceUnits.find(u => u.id === v)
+        if (this.localValue.stationId) {
+          const station = this.ctxStations.find(s => s.id === this.localValue.stationId)
+          if (v && (!station || station.resourceUnitId !== v)) {
+            this.$set(this.localValue, 'stationId', '')
+          }
+        }
         this.focusResourceUnit({ id: v, name: unit ? unit.name : '' })
       }
       this.emitChange(key)

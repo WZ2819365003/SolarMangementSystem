@@ -22,7 +22,8 @@ const routes = [
           section: '生产监控层',
           summary: '在统一模块内查看资源单元健康、可调能力、天气快报和成员电站概况',
           activeMenu: '/production-monitor/overview',
-          viewKey: 'overview'
+          viewKey: 'overview',
+          filterKey: 'production-monitor'
         }
       },
       {
@@ -34,7 +35,8 @@ const routes = [
           section: '生产监控层',
           summary: '查看同区位资源单元的预测与实际出力曲线、天气变化和成员电站贡献',
           activeMenu: '/production-monitor/overview',
-          viewKey: 'output'
+          viewKey: 'output',
+          filterKey: 'production-monitor'
         }
       },
       {
@@ -46,7 +48,8 @@ const routes = [
           section: '生产监控层',
           summary: '查看当日指令执行、响应时间、执行成功率和偏差风险提示',
           activeMenu: '/production-monitor/overview',
-          viewKey: 'dispatch'
+          viewKey: 'dispatch',
+          filterKey: 'production-monitor'
         }
       },
       {
@@ -58,7 +61,8 @@ const routes = [
           section: '生产监控层',
           summary: '以树状结构查看单站实时数据：可调空间、光伏出力、负荷监控和出力预测',
           activeMenu: '/production-monitor/overview',
-          viewKey: 'station'
+          viewKey: 'station',
+          filterKey: 'production-monitor'
         }
       },
       {
@@ -70,7 +74,8 @@ const routes = [
           section: '生产监控层',
           summary: '查看负荷与光伏出力对比，分析可调空间变化',
           activeMenu: '/production-monitor/overview',
-          viewKey: 'load'
+          viewKey: 'load',
+          filterKey: 'production-monitor'
         }
       },
       {
@@ -94,7 +99,8 @@ const routes = [
           section: '预测与分析',
           summary: '查看日前与超短期光伏功率预测对比、偏差热力图和电站预测明细',
           activeMenu: '/forecast/overview',
-          viewKey: 'overview'
+          viewKey: 'overview',
+          filterKey: 'forecast'
         }
       },
       {
@@ -106,7 +112,8 @@ const routes = [
           section: '预测与分析',
           summary: '查看24小时可调能力预测曲线、VPP节点可调时间线和电站可调明细',
           activeMenu: '/forecast/overview',
-          viewKey: 'adjustable'
+          viewKey: 'adjustable',
+          filterKey: 'forecast'
         }
       },
       {
@@ -118,7 +125,8 @@ const routes = [
           section: '预测与分析',
           summary: '评估预测精度趋势、偏差分布和电站精度排名',
           activeMenu: '/forecast/overview',
-          viewKey: 'accuracy'
+          viewKey: 'accuracy',
+          filterKey: 'forecast'
         }
       },
       {
@@ -130,7 +138,8 @@ const routes = [
           section: '策略管理',
           summary: '查看策略台账、状态流转、收益快照和批量操作结果',
           activeMenu: '/strategy/list',
-          viewKey: 'list'
+          viewKey: 'list',
+          filterKey: 'strategy:list'
         }
       },
       {
@@ -142,7 +151,8 @@ const routes = [
           section: '策略管理',
           summary: '配置站点策略、查看树结构、电价窗口并执行模拟和创建',
           activeMenu: '/strategy/list',
-          viewKey: 'config'
+          viewKey: 'config',
+          filterKey: 'strategy:config'
         }
       },
       {
@@ -154,7 +164,8 @@ const routes = [
           section: '策略管理',
           summary: '查看策略收益趋势、明细拆分和策略对比结果',
           activeMenu: '/strategy/list',
-          viewKey: 'revenue'
+          viewKey: 'revenue',
+          filterKey: 'strategy:revenue'
         }
       },
       {

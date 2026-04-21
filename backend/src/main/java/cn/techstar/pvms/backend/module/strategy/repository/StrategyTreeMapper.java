@@ -13,6 +13,7 @@ public interface StrategyTreeMapper {
         String region,
         int companySortIndex,
         String stationId,
+        String resourceUnitId,
         String stationName,
         double capacityKwp,
         String stationStatus,

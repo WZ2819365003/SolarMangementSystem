@@ -61,22 +61,34 @@
         </el-button>
       </div>
 
-      <el-table :data="rows" stripe>
-        <el-table-column prop="deviceId" label="设备编号" width="140" />
-        <el-table-column prop="deviceName" label="设备名称" min-width="180" />
-        <el-table-column prop="stationName" label="所属站点" min-width="220" />
-        <el-table-column prop="type" label="类型" width="110" />
-        <el-table-column prop="status" label="状态" width="110">
+      <el-table :data="pagedRows" stripe size="mini">
+        <el-table-column prop="deviceId" label="设备编号" min-width="130" />
+        <el-table-column prop="deviceName" label="设备名称" min-width="170" show-overflow-tooltip />
+        <el-table-column prop="stationName" label="所属站点" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="type" label="类型" min-width="100" />
+        <el-table-column prop="status" label="状态" min-width="90">
           <template slot-scope="{ row }">
             <el-tag :type="resolveTagType(row.status)">
               {{ row.status }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="loadRate" label="负荷率" width="110" />
-        <el-table-column prop="temperature" label="温度" width="110" />
-        <el-table-column prop="lastReportAt" label="最后上报时间" min-width="180" />
+        <el-table-column prop="loadRate" label="负荷率" min-width="90" />
+        <el-table-column prop="temperature" label="温度" min-width="90" />
+        <el-table-column prop="lastReportAt" label="最后上报时间" min-width="160" />
       </el-table>
+      <el-pagination
+        small
+        background
+        layout="total, sizes, prev, pager, next"
+        :page-sizes="[10, 20, 50]"
+        :page-size="pageSize"
+        :current-page="currentPage"
+        :total="filteredRows.length"
+        style="margin-top: 12px; text-align: right;"
+        @size-change="val => { pageSize = val; currentPage = 1 }"
+        @current-change="val => currentPage = val"
+      />
     </app-section-card>
   </div>
 </template>
@@ -104,7 +116,24 @@ export default {
       summaryCards: [],
       deviceGroups: [],
       maintenanceTips: [],
-      rows: []
+      rows: [],
+      currentPage: 1,
+      pageSize: 10
+    }
+  },
+  computed: {
+    filteredRows() {
+      var kw = this.query.keyword ? this.query.keyword.toLowerCase() : ''
+      var st = this.query.status
+      return this.rows.filter(function (r) {
+        if (kw && (r.deviceName + r.stationName + r.type).toLowerCase().indexOf(kw) === -1) return false
+        if (st && r.status !== st) return false
+        return true
+      })
+    },
+    pagedRows() {
+      var start = (this.currentPage - 1) * this.pageSize
+      return this.filteredRows.slice(start, start + this.pageSize)
     }
   },
   created() {
@@ -118,6 +147,7 @@ export default {
       this.deviceGroups = response.data.deviceGroups
       this.maintenanceTips = response.data.maintenanceTips
       this.rows = response.data.rows
+      this.currentPage = 1
     }
   }
 }

@@ -22,6 +22,7 @@ public interface StrategyRevenueMapper {
         String status,
         String stationId,
         String stationName,
+        String resourceUnitId,
         String companyId,
         String companyName,
         String region

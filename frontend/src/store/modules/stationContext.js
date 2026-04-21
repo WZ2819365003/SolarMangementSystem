@@ -28,10 +28,13 @@ const defaultFocus = () => ({
 function hydrate() {
   try {
     const raw = window.sessionStorage.getItem(STORAGE_KEY)
-    if (!raw) return defaultFocus()
-    return Object.assign(defaultFocus(), JSON.parse(raw))
+    if (!raw) return Object.assign(defaultFocus(), { moduleFilters: {} })
+    const parsed = JSON.parse(raw)
+    return Object.assign(defaultFocus(), parsed, {
+      moduleFilters: parsed.moduleFilters || {}
+    })
   } catch (e) {
-    return defaultFocus()
+    return Object.assign(defaultFocus(), { moduleFilters: {} })
   }
 }
 
@@ -47,7 +50,8 @@ function persist(state) {
         stationId: state.stationId,
         stationName: state.stationName,
         resourceUnitId: state.resourceUnitId,
-        resourceUnitName: state.resourceUnitName
+        resourceUnitName: state.resourceUnitName,
+        moduleFilters: state.moduleFilters || {}
       })
     )
   } catch (e) {
@@ -82,6 +86,7 @@ export default {
       return parts
     },
     currentStation: state => state.stations.find(s => s.id === state.stationId) || null,
+    getModuleFilter: state => moduleKey => Object.assign({}, (state.moduleFilters || {})[moduleKey] || {}),
     hasFocus: state => Boolean(state.stationId || state.resourceUnitId)
   },
 
@@ -110,6 +115,12 @@ export default {
       state.resourceUnitName = next.resourceUnitName
       persist(state)
     },
+    SET_MODULE_FILTER(state, { moduleKey, payload }) {
+      state.moduleFilters = Object.assign({}, state.moduleFilters || {}, {
+        [moduleKey]: Object.assign({}, payload || {})
+      })
+      persist(state)
+    },
     CLEAR_FOCUS(state) {
       Object.assign(state, defaultFocus())
       persist(state)
@@ -127,8 +138,8 @@ export default {
         regionName: payload.regionName || (station && station.regionName) || state.regionName,
         companyId: payload.companyId || (station && station.companyId) || state.companyId,
         companyName: payload.companyName || (station && station.companyName) || state.companyName,
-        resourceUnitId: payload.resourceUnitId || '',
-        resourceUnitName: payload.resourceUnitName || ''
+        resourceUnitId: payload.resourceUnitId || (station && station.resourceUnitId) || state.resourceUnitId,
+        resourceUnitName: payload.resourceUnitName || (station && station.resourceUnitName) || state.resourceUnitName
       }))
     },
     focusResourceUnit({ commit, state }, payload) {
@@ -139,6 +150,9 @@ export default {
     },
     clearFocus({ commit }) {
       commit('CLEAR_FOCUS')
+    },
+    setModuleFilter({ commit }, payload) {
+      commit('SET_MODULE_FILTER', payload)
     },
     registerStations({ commit }, list) {
       commit('SET_STATIONS', list)

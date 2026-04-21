@@ -14,6 +14,7 @@ public interface StrategyRecordMapper {
         String id,
         String stationId,
         String companyId,
+        String resourceUnitId,
         String name,
         String type,
         String status,

@@ -16,7 +16,7 @@ name: pvms
 
 services:
   mysql:
-    image: pvms-mysql:${PVMS_VERSION:-latest}
+    image: pvms-mysql:${PVMS_VERSION:-2.2.1}
     platform: linux/arm64
     build:
       context: ./db
@@ -38,7 +38,7 @@ services:
       retries: 10
 
   backend:
-    image: pvms-backend:${PVMS_VERSION:-latest}
+    image: pvms-backend:${PVMS_VERSION:-2.2.1}
     platform: linux/arm64
     build:
       context: ./backend
@@ -57,7 +57,7 @@ services:
       - "8091:8091"
 
   frontend:
-    image: pvms-frontend:${PVMS_VERSION:-latest}
+    image: pvms-frontend:${PVMS_VERSION:-2.2.1}
     platform: linux/arm64
     build:
       context: ./frontend

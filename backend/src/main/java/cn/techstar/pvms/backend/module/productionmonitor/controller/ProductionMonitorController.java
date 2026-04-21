@@ -53,6 +53,11 @@ public class ProductionMonitorController {
         return ApiResponse.success(productionMonitorDataService.getDispatch(resourceUnitId));
     }
 
+    @GetMapping("/grid-interaction")
+    public ApiResponse<Map<String, Object>> getGridInteraction(@RequestParam String stationId) {
+        return ApiResponse.success(productionMonitorDataService.getGridInteraction(stationId));
+    }
+
     @GetMapping("/weather")
     public ApiResponse<Map<String, Object>> getWeather(@RequestParam String resourceUnitId) {
         return ApiResponse.success(productionMonitorDataService.getWeather(resourceUnitId));

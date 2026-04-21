@@ -81,7 +81,7 @@
 
 <script>
 import AppSectionCard from '@/components/AppSectionCard.vue'
-import { createAmapLoader } from '@/shared/plugins/amap'
+import { createAmapLoader, getAmapConfig } from '@/shared/plugins/amap'
 import DashboardMapDetail from './DashboardMapDetail.vue'
 import DashboardMapFilterPanel from './DashboardMapFilterPanel.vue'
 import DashboardMapInsightPanel from './DashboardMapInsightPanel.vue'
@@ -131,9 +131,11 @@ export default {
   data() {
     return {
       AMapRef: null,
+      LeafletRef: null,
       circleMarkers: [],
       hasUserSelectionFocus: false,
       mapInstance: null,
+      mapProvider: '',
       mapReady: false,
       mapError: '',
       overviewViewport: null,
@@ -216,33 +218,101 @@ export default {
     }
     this.clearMarkers()
     if (this.mapInstance) {
-      this.mapInstance.destroy()
+      this.destroyMap()
       this.mapInstance = null
     }
   },
   methods: {
     async initializeMap() {
+      const config = getAmapConfig()
+      if (config.key) {
+        try {
+          await this.initializeAmap()
+          return
+        } catch (error) {
+          this.mapError = this.formatMapLoadError(error, '高德地图加载失败')
+        }
+      }
+
       try {
-        const AMap = await createAmapLoader({
-          plugins: ['AMap.Scale', 'AMap.ToolBar']
-        })
-        this.AMapRef = AMap
-        this.mapInstance = new AMap.Map(this.$refs.mapCanvas, {
-          resizeEnable: true,
-          zoom: 4.6,
-          center: [112.9388, 31.9263],
-          mapStyle: 'amap://styles/darkblue',
-          viewMode: '2D'
-        })
-        this.mapReady = true
-        this.renderMarkers()
+        await this.initializeLeaflet()
       } catch (error) {
+        if (!config.key) {
+          this.mapError = '高德地图 API 密钥未配置'
+        }
+        this.mapError = this.formatMapLoadError(error, this.mapError || '地图服务加载失败')
+        this.destroyMap()
+        this.mapProvider = ''
         this.mapReady = false
-        this.mapError = '地图服务加载失败，已切换为内置演示视图'
       }
     },
+    formatMapLoadError(error, fallback) {
+      return error && error.message ? `${fallback}（${error.message}）` : fallback
+    },
+    async initializeAmap() {
+      const AMap = await createAmapLoader({
+        plugins: ['AMap.Scale', 'AMap.ToolBar']
+      })
+      this.AMapRef = AMap
+      this.mapProvider = 'amap'
+      this.mapInstance = new AMap.Map(this.$refs.mapCanvas, {
+        resizeEnable: true,
+        zoom: 4.6,
+        center: [112.9388, 31.9263],
+        mapStyle: 'amap://styles/darkblue',
+        viewMode: '2D'
+      })
+      this.mapReady = true
+      this.mapError = ''
+      this.renderMarkers()
+    },
+    async initializeLeaflet() {
+      const leafletModule = await import('leaflet')
+      await import('leaflet/dist/leaflet.css')
+      const L = leafletModule.default || leafletModule
+      this.LeafletRef = L
+      this.mapProvider = 'leaflet'
+      this.mapInstance = L.map(this.$refs.mapCanvas, {
+        zoomControl: true,
+        attributionControl: true
+      }).setView([31.9263, 112.9388], 5)
+      this.$refs.mapCanvas.classList.add('leaflet-container')
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 18
+      }).addTo(this.mapInstance)
+      this.mapReady = true
+      this.mapError = ''
+      this.renderMarkers()
+      this.$nextTick(() => {
+        if (this.mapInstance && this.mapProvider === 'leaflet') {
+          this.mapInstance.invalidateSize()
+        }
+      })
+    },
+    destroyMap() {
+      if (!this.mapInstance) {
+        return
+      }
+
+      if (this.mapProvider === 'leaflet' && this.mapInstance.remove) {
+        this.mapInstance.remove()
+      } else if (this.mapInstance.destroy) {
+        this.mapInstance.destroy()
+      }
+      this.mapProvider = ''
+    },
     handleResize() {
-      if (this.mapInstance) {
+      if (!this.mapInstance) {
+        return
+      }
+
+      if (this.mapProvider === 'leaflet' && this.mapInstance.invalidateSize) {
+        this.mapInstance.invalidateSize()
+        return
+      }
+
+      if (this.mapInstance.resize) {
         this.mapInstance.resize()
       }
     },
@@ -251,10 +321,32 @@ export default {
         return
       }
 
-      this.circleMarkers.forEach(marker => marker.setMap(null))
+      if (this.mapProvider === 'leaflet') {
+        this.circleMarkers.forEach(marker => {
+          if (this.mapInstance && this.mapInstance.removeLayer) {
+            this.mapInstance.removeLayer(marker)
+          }
+        })
+      } else {
+        this.circleMarkers.forEach(marker => marker.setMap(null))
+      }
       this.circleMarkers = []
     },
     renderMarkers() {
+      if (!this.mapInstance) {
+        return
+      }
+
+      if (this.mapProvider === 'leaflet') {
+        this.renderLeafletMarkers()
+        return
+      }
+
+      if (this.AMapRef) {
+        this.renderAmapMarkers()
+      }
+    },
+    renderAmapMarkers() {
       if (!this.mapInstance || !this.AMapRef) {
         return
       }
@@ -296,12 +388,59 @@ export default {
         return markers
       }, [])
 
+      this.applyMarkerViewport()
+    },
+    renderLeafletMarkers() {
+      if (!this.mapInstance || !this.LeafletRef) {
+        return
+      }
+
+      this.clearMarkers()
+
+      this.circleMarkers = this.stations.reduce((markers, item) => {
+        if (item.id === this.selectedStationId) {
+          const haloMarker = this.LeafletRef.circleMarker([item.latitude, item.longitude], {
+            radius: 19,
+            color: item.statusColor,
+            weight: 6,
+            opacity: 0.22,
+            fillColor: item.statusColor,
+            fillOpacity: 0.12
+          }).addTo(this.mapInstance)
+          markers.push(haloMarker)
+        }
+
+        const marker = this.LeafletRef.circleMarker([item.latitude, item.longitude], {
+          radius: item.id === this.selectedStationId ? 11 : 8,
+          color: '#ffffff',
+          weight: item.id === this.selectedStationId ? 3 : 1.5,
+          opacity: 0.88,
+          fillColor: item.statusColor,
+          fillOpacity: 0.9
+        }).addTo(this.mapInstance)
+
+        marker.on('click', () => {
+          this.$emit('station-select', item.id)
+        })
+        markers.push(marker)
+        return markers
+      }, [])
+
+      this.applyMarkerViewport()
+    },
+    applyMarkerViewport() {
       if (!this.circleMarkers.length) {
         return
       }
 
       if (this.hasUserSelectionFocus && this.selectedStation) {
         this.applySelectedViewport()
+      } else if (this.mapProvider === 'leaflet') {
+        const group = this.LeafletRef.featureGroup(this.circleMarkers)
+        this.mapInstance.fitBounds(group.getBounds().pad(0.12), {
+          maxZoom: 12
+        })
+        this.syncOverviewViewport()
       } else {
         this.mapInstance.setFitView(this.circleMarkers)
         this.syncOverviewViewport()
@@ -328,12 +467,23 @@ export default {
 
         this.overviewViewport = {
           zoom: this.mapInstance.getZoom(),
-          center: [center.lng, center.lat]
+          center: this.mapProvider === 'leaflet'
+            ? { lng: center.lng, lat: center.lat }
+            : [center.lng, center.lat]
         }
       }, 160)
     },
     applySelectedViewport() {
       if (!this.mapInstance || !this.selectedStation) {
+        return
+      }
+
+      if (this.mapProvider === 'leaflet') {
+        this.mapInstance.setView([
+          this.selectedStation.latitude,
+          this.selectedStation.longitude
+        ], 14)
+        this.mapInstance.panBy([-120, 30])
         return
       }
 
@@ -355,6 +505,14 @@ export default {
     handleResetOverview() {
       this.hasUserSelectionFocus = false
       if (this.overviewViewport) {
+        if (this.mapProvider === 'leaflet') {
+          this.mapInstance.setView([
+            this.overviewViewport.center.lat,
+            this.overviewViewport.center.lng
+          ], this.overviewViewport.zoom)
+          return
+        }
+
         this.mapInstance.setZoomAndCenter(
           this.overviewViewport.zoom,
           this.overviewViewport.center
@@ -373,6 +531,16 @@ export default {
   display: flex;
   flex-direction: column;
   height: 100%;
+}
+
+.dashboard-map-card /deep/ .leaflet-container {
+  background: #061735;
+  color: var(--pvms-text-secondary);
+}
+
+.dashboard-map-card /deep/ .leaflet-control-attribution {
+  background: rgba(6, 23, 53, 0.72);
+  color: var(--pvms-text-muted);
 }
 
 .dashboard-map-card /deep/ .app-section-card__content {
@@ -459,7 +627,7 @@ export default {
   position: absolute;
   top: 18px;
   left: 18px;
-  z-index: 2;
+  z-index: 500;
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -488,7 +656,7 @@ export default {
   position: absolute;
   top: 18px;
   right: 18px;
-  z-index: 2;
+  z-index: 500;
   height: 32px;
   padding: 0 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -509,7 +677,7 @@ export default {
   position: absolute;
   right: 18px;
   bottom: 18px;
-  z-index: 2;
+  z-index: 500;
 }
 
 @media (max-width: 1280px) {

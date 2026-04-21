@@ -19,6 +19,7 @@ public interface StrategyMetaMapper {
         String id,
         String companyId,
         String companyName,
+        String resourceUnitId,
         String region,
         String name,
         double capacityKwp,

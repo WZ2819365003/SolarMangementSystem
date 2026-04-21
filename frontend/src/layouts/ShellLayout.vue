@@ -69,6 +69,8 @@
         </div>
       </header>
 
+      <global-filter-bar v-if="$route.meta && $route.meta.filterKey" />
+
       <main class="pv-shell__content">
         <router-view />
       </main>
@@ -77,8 +79,13 @@
 </template>
 
 <script>
+import GlobalFilterBar from '@/components/GlobalFilterBar.vue'
+
 export default {
   name: 'ShellLayout',
+  components: {
+    GlobalFilterBar
+  },
   computed: {
     appName() {
       return this.$store.state.appName

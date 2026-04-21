@@ -69,14 +69,24 @@ public class ForecastDataService {
 
     public Map<String, Object> getMeta() {
         List<ForecastStationMapper.StationRow> stations = stationMapper.findAll();
-        LinkedHashSet<String> regions = stations.stream()
+        LinkedHashMap<String, String> ruMap = new LinkedHashMap<>();
+        stations.forEach(s -> ruMap.put(s.companyId(), s.companyName()));
+        List<Map<String, Object>> resourceUnits = ruMap.entrySet().stream()
+            .map(e -> orderedMap("id", (Object) e.getKey(), "name", e.getValue()))
+            .toList();
+        List<Map<String, Object>> regions = stations.stream()
             .map(ForecastStationMapper.StationRow::region)
-            .collect(Collectors.toCollection(LinkedHashSet::new));
+            .filter(Objects::nonNull)
+            .collect(Collectors.toCollection(LinkedHashSet::new))
+            .stream()
+            .map(region -> orderedMap("label", (Object) region, "value", region))
+            .toList();
 
         return orderedMap(
             "defaultDate", DEFAULT_BIZ_DATE.toString(),
             "defaultStationId", stations.isEmpty() ? "" : stations.getFirst().id(),
-            "regions", new ArrayList<>(regions),
+            "regions", regions,
+            "resourceUnits", resourceUnits,
             "stations", stations.stream().map(this::mapStationMeta).toList(),
             "forecastTypes", List.of(
                 orderedMap("label", "日前预测", "value", "day-ahead"),
@@ -96,8 +106,8 @@ public class ForecastDataService {
         );
     }
 
-    public Map<String, Object> getOverview(String region, String stationId, String forecastType) {
-        List<ForecastStationMapper.StationRow> filteredStations = fallbackStations(resolveStations(region, stationId));
+    public Map<String, Object> getOverview(String region, String resourceUnitId, String stationId, String forecastType) {
+        List<ForecastStationMapper.StationRow> filteredStations = fallbackStations(resolveStations(region, resourceUnitId, stationId));
         Set<String> stationIds = stationIdSet(filteredStations);
         String selectedForecastType = normalizeForecastType(forecastType);
 
@@ -157,8 +167,8 @@ public class ForecastDataService {
         );
     }
 
-    public Map<String, Object> getComparison(String region, String stationId) {
-        List<ForecastStationMapper.StationRow> filteredStations = fallbackStations(resolveStations(region, stationId));
+    public Map<String, Object> getComparison(String region, String resourceUnitId, String stationId) {
+        List<ForecastStationMapper.StationRow> filteredStations = fallbackStations(resolveStations(region, resourceUnitId, stationId));
         ForecastStationMapper.StationRow focusStation = resolveFocusStation(filteredStations, stationId);
 
         List<ForecastCurveMapper.CurveRow> curveRows = curveMapper.findByDate(DEFAULT_BIZ_DATE).stream()
@@ -185,12 +195,13 @@ public class ForecastDataService {
 
     public Map<String, Object> getDeviationHeatmap(
         String region,
+        String resourceUnitId,
         String stationId,
         String forecastType,
         LocalDate startDate,
         LocalDate endDate
     ) {
-        List<ForecastStationMapper.StationRow> filteredStations = fallbackStations(resolveStations(region, stationId));
+        List<ForecastStationMapper.StationRow> filteredStations = fallbackStations(resolveStations(region, resourceUnitId, stationId));
         Set<String> stationIds = stationIdSet(filteredStations);
         String selectedForecastType = normalizeForecastType(forecastType);
         LocalDate resolvedEndDate = endDate == null ? DEFAULT_BIZ_DATE : endDate;
@@ -216,8 +227,8 @@ public class ForecastDataService {
         );
     }
 
-    public Map<String, Object> getAdjustable(String region, String stationId, String forecastType) {
-        List<ForecastStationMapper.StationRow> filteredStations = fallbackStations(resolveStations(region, stationId));
+    public Map<String, Object> getAdjustable(String region, String resourceUnitId, String stationId, String forecastType) {
+        List<ForecastStationMapper.StationRow> filteredStations = fallbackStations(resolveStations(region, resourceUnitId, stationId));
         Set<String> stationIds = stationIdSet(filteredStations);
         String selectedForecastType = normalizeForecastType(forecastType);
 
@@ -323,12 +334,13 @@ public class ForecastDataService {
 
     public Map<String, Object> getAccuracy(
         String region,
+        String resourceUnitId,
         String stationId,
         String forecastType,
         LocalDate startDate,
         LocalDate endDate
     ) {
-        List<ForecastStationMapper.StationRow> filteredStations = fallbackStations(resolveStations(region, stationId));
+        List<ForecastStationMapper.StationRow> filteredStations = fallbackStations(resolveStations(region, resourceUnitId, stationId));
         Set<String> stationIds = stationIdSet(filteredStations);
         String selectedForecastType = normalizeForecastType(forecastType);
         LocalDate resolvedEndDate = endDate == null ? DEFAULT_BIZ_DATE : endDate;
@@ -386,8 +398,10 @@ public class ForecastDataService {
         return orderedMap(
             "id", station.id(),
             "name", station.name(),
-            "region", station.region(),
+            "companyId", station.companyId(),
             "companyName", station.companyName(),
+            "resourceUnitId", station.resourceUnitId(),
+            "region", station.region(),
             "status", station.status(),
             "dataQuality", station.dataQuality(),
             "capacityMw", round(station.capacityKwp() / 1000.0, 2)
@@ -418,10 +432,11 @@ public class ForecastDataService {
         return row;
     }
 
-    private List<ForecastStationMapper.StationRow> resolveStations(String region, String stationId) {
+    private List<ForecastStationMapper.StationRow> resolveStations(String region, String resourceUnitId, String stationId) {
         List<ForecastStationMapper.StationRow> stations = stationMapper.findAll();
         return stations.stream()
             .filter(item -> region == null || region.isBlank() || Objects.equals(item.region(), region))
+            .filter(item -> resourceUnitId == null || resourceUnitId.isBlank() || Objects.equals(item.resourceUnitId(), resourceUnitId))
             .filter(item -> stationId == null || stationId.isBlank() || Objects.equals(item.id(), stationId))
             .toList();
     }

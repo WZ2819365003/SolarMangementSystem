@@ -109,6 +109,13 @@ export function fetchProductionMonitorWeather(params) {
   })
 }
 
+export function fetchProductionMonitorGridInteraction(params) {
+  return request('/pvms/production-monitor/grid-interaction', {
+    method: 'get',
+    params
+  })
+}
+
 export function fetchResourceUnitList(params) {
   return request('/pvms/resource-units/list', {
     method: 'get',

@@ -9,6 +9,7 @@
             s.name,
             s.company_id,
             c.name AS company_name,
+            ps.resource_unit_id,
             c.region,
             s.capacity_kwp,
             s.status,
@@ -16,6 +17,7 @@
             s.sort_index
         FROM sa_station s
         JOIN sa_company c ON c.id = s.company_id
+        LEFT JOIN pm_station ps ON ps.id = s.id
         ORDER BY c.sort_index, s.sort_index
     </select>
 

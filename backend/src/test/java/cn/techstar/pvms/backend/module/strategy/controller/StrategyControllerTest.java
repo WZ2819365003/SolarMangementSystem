@@ -67,6 +67,30 @@ class StrategyControllerTest {
     }
 
     @Test
+    void shouldScopeStrategyListAndKpiByResourceUnitAndStation() throws Exception {
+        mockMvc.perform(
+                get("/api/pvms/strategy/list")
+                    .param("resourceUnitId", "RU-001")
+                    .param("type", "frequency-regulation")
+            )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0))
+            .andExpect(jsonPath("$.data.total").value(1))
+            .andExpect(jsonPath("$.data.items[0].id").value("SG-004"))
+            .andExpect(jsonPath("$.data.items[0].stationId").value("SZ-004"))
+            .andExpect(jsonPath("$.data.items[0].resourceUnitId").value("RU-001"));
+
+        mockMvc.perform(
+                get("/api/pvms/strategy/kpi")
+                    .param("resourceUnitId", "RU-001")
+                    .param("stationId", "SZ-004")
+            )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0))
+            .andExpect(jsonPath("$.data.strategyCount").value(2));
+    }
+
+    @Test
     void shouldReturnElectricityPriceRevenueAndCompare() throws Exception {
         mockMvc.perform(get("/api/pvms/strategy/electricity-price").param("stationId", "SZ-001"))
             .andExpect(status().isOk())

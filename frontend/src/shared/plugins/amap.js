@@ -1,8 +1,8 @@
 import AMapLoader from '@amap/amap-jsapi-loader'
 
-const amapKey = process.env.VUE_APP_AMAP_KEY || ''
-const amapSecurityCode = process.env.VUE_APP_AMAP_SECURITY_CODE || ''
-const amapVersion = process.env.VUE_APP_AMAP_VERSION || '2.0'
+const amapKey = '735d57cb68fc13197c26bc4068bbf558'
+const amapSecurityCode = 'ee65df02b76c0f4d4a14924b661db3df'
+const amapVersion = '2.0'
 
 export function applyAmapSecurityConfig() {
   if (!amapSecurityCode) {

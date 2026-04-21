@@ -39,14 +39,15 @@
       </template>
 
       <el-table
-        :data="items"
+        :data="pagedItems"
         size="mini"
         stripe
+        style="width: 100%;"
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="48" />
-        <el-table-column prop="name" label="策略名称" min-width="200" />
-        <el-table-column prop="typeLabel" label="类型" width="140" />
+        <el-table-column prop="name" label="策略名称" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="typeLabel" label="类型" width="130" show-overflow-tooltip />
         <el-table-column label="状态" width="120">
           <template slot-scope="{ row }">
             <el-tag :type="row.statusType" size="mini">{{ row.statusLabel }}</el-tag>
@@ -60,8 +61,12 @@
             {{ confidenceText(row) }}
           </template>
         </el-table-column>
-        <el-table-column prop="startTime" label="开始时间" width="170" />
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="开始时间" width="150">
+          <template slot-scope="{ row }">
+            {{ formatTime(row.startTime) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="160">
           <template slot-scope="{ row }">
             <el-button type="text" size="mini" @click="openDetail(row)">详情</el-button>
             <el-button type="text" size="mini" @click="handleSubmit(row)">提交</el-button>
@@ -69,6 +74,18 @@
           </template>
         </el-table-column>
       </el-table>
+      <el-pagination
+        small
+        background
+        layout="total, sizes, prev, pager, next"
+        :page-sizes="[8, 15, 30]"
+        :page-size="pageSize"
+        :current-page="currentPage"
+        :total="items.length"
+        style="margin-top: 12px; text-align: right;"
+        @size-change="val => { pageSize = val; currentPage = 1 }"
+        @current-change="val => { currentPage = val }"
+      />
     </app-section-card>
 
     <el-drawer
@@ -159,7 +176,9 @@ export default {
       selection: [],
       detailVisible: false,
       detailLoading: false,
-      detailData: null
+      detailData: null,
+      currentPage: 1,
+      pageSize: 8
     }
   },
   computed: {
@@ -174,6 +193,10 @@ export default {
     },
     items() {
       return (this.viewData.list && this.viewData.list.items) || []
+    },
+    pagedItems() {
+      const start = (this.currentPage - 1) * this.pageSize
+      return this.items.slice(start, start + this.pageSize)
     },
     detailFields() {
       if (!this.detailData) {
@@ -192,6 +215,11 @@ export default {
     }
   },
   methods: {
+    formatTime(val) {
+      if (!val) return '--'
+      // "2026-03-30T15:00:00" → "2026-03-30 15:00"
+      return String(val).replace('T', ' ').slice(0, 16)
+    },
     slotLabel(slot) {
       var safeSlot = Math.max(0, Math.min(slot, 96))
       if (safeSlot >= 96) {

@@ -29,50 +29,55 @@ public class ForecastController {
     @GetMapping("/overview")
     public ApiResponse<Map<String, Object>> getOverview(
         @RequestParam(required = false) String region,
+        @RequestParam(required = false) String resourceUnitId,
         @RequestParam(required = false) String stationId,
         @RequestParam(required = false, defaultValue = "day-ahead") String forecastType
     ) {
-        return ApiResponse.success(forecastDataService.getOverview(region, stationId, forecastType));
+        return ApiResponse.success(forecastDataService.getOverview(region, resourceUnitId, stationId, forecastType));
     }
 
     @GetMapping("/comparison")
     public ApiResponse<Map<String, Object>> getComparison(
         @RequestParam(required = false) String region,
+        @RequestParam(required = false) String resourceUnitId,
         @RequestParam(required = false) String stationId
     ) {
-        return ApiResponse.success(forecastDataService.getComparison(region, stationId));
+        return ApiResponse.success(forecastDataService.getComparison(region, resourceUnitId, stationId));
     }
 
     @GetMapping("/deviation-heatmap")
     public ApiResponse<Map<String, Object>> getDeviationHeatmap(
         @RequestParam(required = false) String region,
+        @RequestParam(required = false) String resourceUnitId,
         @RequestParam(required = false) String stationId,
         @RequestParam(required = false, defaultValue = "day-ahead") String forecastType,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
     ) {
         return ApiResponse.success(
-            forecastDataService.getDeviationHeatmap(region, stationId, forecastType, startDate, endDate)
+            forecastDataService.getDeviationHeatmap(region, resourceUnitId, stationId, forecastType, startDate, endDate)
         );
     }
 
     @GetMapping("/adjustable")
     public ApiResponse<Map<String, Object>> getAdjustable(
         @RequestParam(required = false) String region,
+        @RequestParam(required = false) String resourceUnitId,
         @RequestParam(required = false) String stationId,
         @RequestParam(required = false, defaultValue = "day-ahead") String forecastType
     ) {
-        return ApiResponse.success(forecastDataService.getAdjustable(region, stationId, forecastType));
+        return ApiResponse.success(forecastDataService.getAdjustable(region, resourceUnitId, stationId, forecastType));
     }
 
     @GetMapping("/accuracy")
     public ApiResponse<Map<String, Object>> getAccuracy(
         @RequestParam(required = false) String region,
+        @RequestParam(required = false) String resourceUnitId,
         @RequestParam(required = false) String stationId,
         @RequestParam(required = false, defaultValue = "day-ahead") String forecastType,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
     ) {
-        return ApiResponse.success(forecastDataService.getAccuracy(region, stationId, forecastType, startDate, endDate));
+        return ApiResponse.success(forecastDataService.getAccuracy(region, resourceUnitId, stationId, forecastType, startDate, endDate));
     }
 }

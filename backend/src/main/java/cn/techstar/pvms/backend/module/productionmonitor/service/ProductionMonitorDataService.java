@@ -65,6 +65,9 @@ public class ProductionMonitorDataService {
             "regionOptions", buildRegionOptions(resourceUnits),
             "resourceUnits", resourceUnits.stream()
                 .map(unit -> mapMetaUnit(unit, stationsByUnit.getOrDefault(unit.id(), List.of())))
+                .toList(),
+            "stations", stationSnapshotMapper.findAll().stream()
+                .map(this::mapMetaStation)
                 .toList()
         );
     }
@@ -174,6 +177,77 @@ public class ProductionMonitorDataService {
         );
     }
 
+    public Map<String, Object> getGridInteraction(String stationId) {
+        // Resolve station snapshot (fall back to first if not found)
+        ProductionMonitorStationSnapshotMapper.StationSnapshotRow station = stationSnapshotMapper.findAll().stream()
+            .filter(s -> Objects.equals(s.id(), stationId))
+            .findFirst()
+            .orElseGet(() -> stationSnapshotMapper.findAll().getFirst());
+
+        // Try to get real curve data for this station
+        List<ProductionMonitorCurveMapper.CurveRow> curveRows = curveMapper.findLoadVisibleByDate(DEFAULT_BIZ_DATE).stream()
+            .filter(row -> Objects.equals(row.stationId(), station.id()))
+            .toList();
+
+        List<ProductionMonitorSeriesAggregator.AggregatedPoint> points = seriesAggregator.aggregate(curveRows, "15m");
+
+        // No real data → generate a realistic synthetic day curve
+        if (points.isEmpty()) {
+            points = buildSyntheticPoints(station);
+        }
+
+        return orderedMap(
+            "stationId", station.id(),
+            "stationName", station.name(),
+            "times", seriesAggregator.axis(points),
+            "series", List.of(
+                orderedMap("name", "负荷", "data",
+                    seriesAggregator.toKwSeries(points, ProductionMonitorSeriesAggregator.AggregatedPoint::loadKw)),
+                orderedMap("name", "光伏出力", "data",
+                    seriesAggregator.toKwSeries(points, ProductionMonitorSeriesAggregator.AggregatedPoint::pvPowerKw)),
+                orderedMap("name", "电网交互(负荷-出力)", "data",
+                    seriesAggregator.toKwSeries(points, p -> p.loadKw() - p.pvPowerKw()), "area", true)
+            )
+        );
+    }
+
+    private List<ProductionMonitorSeriesAggregator.AggregatedPoint> buildSyntheticPoints(
+        ProductionMonitorStationSnapshotMapper.StationSnapshotRow station
+    ) {
+        // Use snapshot values as scale anchors; fall back to capacity-derived estimates
+        double peakPvKw  = Math.max(station.realtimePowerKw(), station.capacityMw() * 700.0);
+        double peakLoadKw = Math.max(station.loadKw(), station.capacityMw() * 850.0);
+
+        List<ProductionMonitorSeriesAggregator.AggregatedPoint> points = new ArrayList<>(96);
+        for (int slot = 0; slot < 96; slot++) {
+            double h = slot / 4.0;  // fractional hour
+
+            // PV: bell curve 06:00 → 18:00, peaks at noon
+            double pvFactor = (h >= 6.0 && h <= 18.0)
+                ? Math.sin((h - 6.0) / 12.0 * Math.PI) : 0.0;
+            double pvKw = round(peakPvKw * pvFactor, 1);
+
+            // Load: gentle sine waves giving morning and evening humps, floor at 35%
+            double loadFactor = 0.65
+                + 0.15 * Math.sin((h - 3.0) / 12.0 * Math.PI)
+                + 0.10 * Math.sin((h - 16.0) /  6.0 * Math.PI);
+            double loadKw = round(peakLoadKw * Math.max(0.35, loadFactor), 1);
+
+            int totalMinutes = slot * 15;
+            String label = "%02d:%02d".formatted(totalMinutes / 60, totalMinutes % 60);
+
+            points.add(new ProductionMonitorSeriesAggregator.AggregatedPoint(
+                label, loadKw, pvKw,
+                round(pvKw * 0.94, 1),   // forecast ≈ 94% of actual
+                round(pvKw * 0.97, 1),   // baseline ≈ 97% of actual
+                (int) (650.0 * pvFactor), // irradiance (W/m²)
+                25.0 + pvFactor * 8.0,   // temperature rises with sun
+                15                        // 15-min step
+            ));
+        }
+        return points;
+    }
+
     public Map<String, Object> getDispatch(String resourceUnitId) {
         Context context = resolveContext(resourceUnitId);
         List<ProductionMonitorDispatchRecordMapper.DispatchRecordRow> records = dispatchRecordMapper.findByResourceUnitId(context.unit().id());
@@ -277,9 +351,24 @@ public class ProductionMonitorDataService {
             "statusColor", meta.color(),
             "clusterRadiusKm", unit.clusterRadiusKm(),
             "stationCount", stations.size(),
+            "stationIds", stations.stream().map(ProductionMonitorStationSnapshotMapper.StationSnapshotRow::id).toList(),
             "dispatchMode", unit.dispatchMode(),
             "strategyLabel", unit.strategyLabel(),
             "dispatchableCapacityMw", calculateDispatchableCapacityMw(stations)
+        );
+    }
+
+    private Map<String, Object> mapMetaStation(ProductionMonitorStationSnapshotMapper.StationSnapshotRow station) {
+        return orderedMap(
+            "id", station.id(),
+            "name", station.name(),
+            "resourceUnitId", station.resourceUnitId(),
+            "capacityMw", round(station.capacityMw(), 1),
+            "status", station.status(),
+            "statusLabel", resolveStatusLabel(station.status()),
+            "onlineRate", round(station.onlineRate(), 1),
+            "alarmCount", station.alarmCount(),
+            "sortIndex", station.sortIndex()
         );
     }
 

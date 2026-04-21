@@ -12,6 +12,7 @@
             sg.id,
             sg.station_id,
             sg.company_id,
+            ps.resource_unit_id,
             sg.name,
             sg.type,
             sg.status,
@@ -40,6 +41,7 @@
         FROM sg_strategy sg
         JOIN sa_station st ON st.id = sg.station_id
         JOIN sa_company co ON co.id = sg.company_id
+        LEFT JOIN pm_station ps ON ps.id = sg.station_id
         LEFT JOIN sg_strategy_snapshot ss ON ss.strategy_id = sg.id
         LEFT JOIN sg_revenue_daily rd ON rd.strategy_id = sg.id AND rd.biz_date = #{bizDate}
     </sql>

@@ -19,32 +19,44 @@
 
     <div class="strategy-revenue-view__grid">
       <app-section-card title="收益明细" subtitle="按策略、日期、电站维度拆分收益构成">
-        <el-table :data="detailItems" size="mini" stripe>
-          <el-table-column prop="date" label="日期" width="110" />
-          <el-table-column prop="strategyName" label="策略" min-width="180" />
-          <el-table-column prop="stationName" label="电站" min-width="140" />
-          <el-table-column prop="actualRevenue" label="实际收益(¥)" width="120" align="right" />
-          <el-table-column prop="estimatedRevenue" label="预估收益(¥)" width="120" align="right" />
-          <el-table-column prop="peakSaving" label="削峰收益(¥)" width="120" align="right" />
-          <el-table-column prop="responseReward" label="响应奖励(¥)" width="120" align="right" />
-          <el-table-column prop="penalty" label="罚金(¥)" width="120" align="right" />
+        <el-table :data="pagedDetailItems" size="mini" stripe>
+          <el-table-column prop="date" label="日期" min-width="100" />
+          <el-table-column prop="strategyName" label="策略" min-width="160" show-overflow-tooltip />
+          <el-table-column prop="stationName" label="电站" min-width="120" show-overflow-tooltip />
+          <el-table-column prop="actualRevenue" label="实际收益(¥)" min-width="110" align="right" />
+          <el-table-column prop="estimatedRevenue" label="预估收益(¥)" min-width="110" align="right" />
+          <el-table-column prop="peakSaving" label="削峰收益(¥)" min-width="110" align="right" />
+          <el-table-column prop="responseReward" label="响应奖励(¥)" min-width="110" align="right" />
+          <el-table-column prop="penalty" label="罚金(¥)" min-width="90" align="right" />
         </el-table>
+        <el-pagination
+          small
+          background
+          layout="total, sizes, prev, pager, next"
+          :page-sizes="[8, 15, 30]"
+          :page-size="detailPageSize"
+          :current-page="detailCurrentPage"
+          :total="detailItems.length"
+          style="margin-top: 12px; text-align: right;"
+          @size-change="val => { detailPageSize = val; detailCurrentPage = 1 }"
+          @current-change="val => detailCurrentPage = val"
+        />
       </app-section-card>
 
       <app-section-card title="策略对比" subtitle="对比结果基于后端收益明细汇总，便于后续替换成真实结算数据">
-        <div ref="compareChart" class="strategy-revenue-view__compare-chart" />
-
-        <el-table :data="compareItems" size="mini" stripe>
-          <el-table-column prop="name" label="策略" min-width="160" />
-          <el-table-column prop="stationName" label="电站" min-width="140" />
-          <el-table-column prop="totalRevenue" label="累计收益(¥)" width="120" align="right" />
-          <el-table-column prop="estimatedRevenue" label="累计预估(¥)" width="120" align="right" />
-          <el-table-column prop="achievementRate" label="达成率(%)" width="120" align="right" />
-        </el-table>
-
-        <p class="strategy-revenue-view__delta">
-          两组策略累计收益差值：{{ compare.totalDelta || 0 }} ¥
-        </p>
+        <div class="strategy-revenue-view__compare-wrap">
+          <div ref="compareChart" class="strategy-revenue-view__compare-chart" />
+          <el-table :data="compareItems" size="mini" stripe>
+            <el-table-column prop="name" label="策略" min-width="160" show-overflow-tooltip />
+            <el-table-column prop="stationName" label="电站" min-width="130" show-overflow-tooltip />
+            <el-table-column prop="totalRevenue" label="累计收益(¥)" min-width="110" align="right" />
+            <el-table-column prop="estimatedRevenue" label="累计预估(¥)" min-width="110" align="right" />
+            <el-table-column prop="achievementRate" label="达成率(%)" min-width="100" align="right" />
+          </el-table>
+          <p class="strategy-revenue-view__delta">
+            两组策略累计收益差值：{{ compare.totalDelta || 0 }} ¥
+          </p>
+        </div>
       </app-section-card>
     </div>
   </div>
@@ -80,7 +92,9 @@ export default {
   data() {
     return {
       trendInstance: null,
-      compareInstance: null
+      compareInstance: null,
+      detailCurrentPage: 1,
+      detailPageSize: 8
     }
   },
   computed: {
@@ -104,6 +118,10 @@ export default {
     },
     detailItems() {
       return this.detail.items || []
+    },
+    pagedDetailItems() {
+      var start = (this.detailCurrentPage - 1) * this.detailPageSize
+      return this.detailItems.slice(start, start + this.detailPageSize)
     },
     compareItems() {
       return this.compare.items || []
@@ -271,15 +289,20 @@ export default {
   gap: 16px;
 }
 
+.strategy-revenue-view__compare-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .strategy-revenue-view__compare-chart {
-  height: 220px;
-  margin-bottom: 12px;
+  height: 200px;
 }
 
 .strategy-revenue-view__delta {
-  margin: 14px 0 0;
   color: var(--pvms-text-primary);
   font-size: 13px;
+  margin: 0;
 }
 
 @media (max-width: 1480px) {
