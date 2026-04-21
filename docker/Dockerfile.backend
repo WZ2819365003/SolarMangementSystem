@@ -1,25 +1,9 @@
-# ---- Stage 1: 构建 ----
-FROM eclipse-temurin:21-jdk-alpine AS builder
-
-WORKDIR /build
-
-# 先拷贝 pom.xml，利用 Docker 缓存层避免每次重新下载依赖
-COPY backend/pom.xml .
-RUN apk add --no-cache maven && \
-    mvn dependency:go-offline -B -q
-
-# 拷贝源码并构建（跳过测试）
-COPY backend/src ./src
-RUN mvn package -DskipTests -B -q
-
-# ---- Stage 2: 运行 ----
-FROM eclipse-temurin:21-jre-alpine
+FROM arm64v8/openjdk:17-jdk-alpine
 
 WORKDIR /app
 
-# 从构建阶段拷贝 jar
-COPY --from=builder /build/target/pvms-backend-*.jar app.jar
+COPY backend/target/pvms-backend.jar app.jar
 
-EXPOSE 8091
+EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

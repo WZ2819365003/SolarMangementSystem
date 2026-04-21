@@ -1,64 +1,43 @@
-version: "3.9"
+version: '3.8'
 
 services:
-
-  # ── MySQL 数据库 ──────────────────────────────────────────────
   pvms-mysql:
-    image: mysql:8.0
+    image: arm64v8/mysql:8.0
     container_name: pvms-mysql
-    restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: pvms
-      MYSQL_CHARSET: utf8mb4
-      MYSQL_COLLATION: utf8mb4_unicode_ci
+      MYSQL_USER: pvms
+      MYSQL_PASSWORD: pvms
     ports:
       - "3307:3306"
     volumes:
-      - pvms-mysql-data:/var/lib/mysql
-      # SQL 文件挂载到 /sql/，由 init.sh 以 utf8mb4 字符集执行
-      - ../backend/src/main/resources/schema.sql:/sql/01_schema.sql:ro
-      - ../backend/src/main/resources/mysql-data.sql:/sql/02_data.sql:ro
-      - ./init.sh:/docker-entrypoint-initdb.d/init.sh:ro
-    command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-      - --default-time-zone=+08:00
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
+      - ./mysql-data:/var/lib/mysql
+      - ../sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: always
 
-  # ── 后端 Spring Boot ──────────────────────────────────────────
   pvms-backend:
     build:
       context: ..
       dockerfile: docker/Dockerfile.backend
     container_name: pvms-backend
-    restart: unless-stopped
     depends_on:
-      pvms-mysql:
-        condition: service_healthy
-    environment:
-      SPRING_DATASOURCE_URL: "jdbc:mysql://pvms-mysql:3306/pvms?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: "123456"
+      - pvms-mysql
     ports:
-      - "8091:8091"
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://pvms-mysql:3306/pvms?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: pvms
+      SPRING_DATASOURCE_PASSWORD: pvms
+    restart: always
 
-  # ── 前端 Nginx ────────────────────────────────────────────────
   pvms-frontend:
     build:
       context: ..
       dockerfile: docker/Dockerfile.frontend
     container_name: pvms-frontend
-    restart: unless-stopped
     depends_on:
       - pvms-backend
     ports:
       - "80:80"
-
-volumes:
-  pvms-mysql-data:
+    restart: always

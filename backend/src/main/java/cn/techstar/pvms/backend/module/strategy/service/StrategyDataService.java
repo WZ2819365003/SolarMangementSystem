@@ -17,6 +17,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -64,6 +65,7 @@ public class StrategyDataService {
                     "id", station.id(),
                     "companyId", station.companyId(),
                     "companyName", station.companyName(),
+                    "resourceUnitId", station.resourceUnitId(),
                     "region", station.region(),
                     "name", station.name(),
                     "capacityKwp", StrategySupport.round(station.capacityKwp(), 2),
@@ -88,9 +90,11 @@ public class StrategyDataService {
         );
     }
 
-    public Map<String, Object> getTree() {
+    public Map<String, Object> getTree(String resourceUnitId) {
         LinkedHashMap<String, Map<String, Object>> companies = new LinkedHashMap<>();
-        treeMapper.findCompanyStationRows().forEach(row -> {
+        treeMapper.findCompanyStationRows().stream()
+            .filter(row -> isBlank(resourceUnitId) || Objects.equals(row.resourceUnitId(), resourceUnitId))
+            .forEach(row -> {
             Map<String, Object> companyNode = companies.computeIfAbsent(row.companyId(), key -> {
                 Map<String, Object> node = new LinkedHashMap<>();
                 node.put("id", row.companyId());
@@ -111,6 +115,7 @@ public class StrategyDataService {
                 "label", row.stationName(),
                 "type", "station",
                 "stationId", row.stationId(),
+                "resourceUnitId", row.resourceUnitId(),
                 "capacityKwp", StrategySupport.round(row.capacityKwp(), 2),
                 "status", row.stationStatus(),
                 "dataQuality", row.dataQuality(),
@@ -127,13 +132,28 @@ public class StrategyDataService {
         return StrategySupport.orderedMap("tree", new ArrayList<>(companies.values()));
     }
 
-    public Map<String, Object> getKpi() {
-        List<StrategyRecordMapper.StrategyRow> strategies = recordMapper.findAll(StrategySupport.DEFAULT_BIZ_DATE);
+    public Map<String, Object> getKpi(String resourceUnitId, String stationId) {
+        List<StrategyRecordMapper.StrategyRow> strategies = filterStrategies(
+            recordMapper.findAll(StrategySupport.DEFAULT_BIZ_DATE),
+            null,
+            null,
+            null,
+            resourceUnitId,
+            stationId,
+            null
+        );
+        Set<String> strategyIds = strategies.stream()
+            .map(StrategyRecordMapper.StrategyRow::id)
+            .collect(Collectors.toSet());
         List<StrategyRevenueMapper.RevenueDailyRow> todayRevenue = revenueMapper.findByDateRange(
             StrategySupport.DEFAULT_BIZ_DATE,
             StrategySupport.DEFAULT_BIZ_DATE
-        );
-        List<StrategyRecordMapper.ExecutionLogRow> logs = recordMapper.findAllExecutionLogs();
+        ).stream()
+            .filter(item -> strategyIds.contains(item.strategyId()))
+            .toList();
+        List<StrategyRecordMapper.ExecutionLogRow> logs = recordMapper.findAllExecutionLogs().stream()
+            .filter(item -> strategyIds.contains(item.strategyId()))
+            .toList();
         long successLogs = logs.stream().filter(item -> Objects.equals(item.result(), "success")).count();
 
         double todayRevenueValue = todayRevenue.stream().mapToDouble(StrategyRevenueMapper.RevenueDailyRow::actualRevenueCny).sum();
@@ -150,8 +170,8 @@ public class StrategyDataService {
         );
     }
 
-    public Map<String, Object> getList(String status, String type, String region, String stationId, String keyword) {
-        List<StrategyRecordMapper.StrategyRow> items = filterStrategies(recordMapper.findAll(StrategySupport.DEFAULT_BIZ_DATE), status, type, region, stationId, keyword);
+    public Map<String, Object> getList(String status, String type, String region, String resourceUnitId, String stationId, String keyword) {
+        List<StrategyRecordMapper.StrategyRow> items = filterStrategies(recordMapper.findAll(StrategySupport.DEFAULT_BIZ_DATE), status, type, region, resourceUnitId, stationId, keyword);
         return StrategySupport.orderedMap(
             "items", items.stream().map(this::mapListItem).toList(),
             "total", items.size()
@@ -171,6 +191,7 @@ public class StrategyDataService {
             "mode", row.mode(),
             "stationId", row.stationId(),
             "stationName", row.stationName(),
+            "resourceUnitId", row.resourceUnitId(),
             "companyId", row.companyId(),
             "companyName", row.companyName(),
             "region", row.region(),
@@ -307,6 +328,7 @@ public class StrategyDataService {
         String status,
         String type,
         String region,
+        String resourceUnitId,
         String stationId,
         String keyword
     ) {
@@ -314,6 +336,7 @@ public class StrategyDataService {
             .filter(item -> status == null || status.isBlank() || Objects.equals(item.status(), status))
             .filter(item -> type == null || type.isBlank() || Objects.equals(item.type(), type))
             .filter(item -> region == null || region.isBlank() || Objects.equals(item.region(), region))
+            .filter(item -> resourceUnitId == null || resourceUnitId.isBlank() || Objects.equals(item.resourceUnitId(), resourceUnitId))
             .filter(item -> stationId == null || stationId.isBlank() || Objects.equals(item.stationId(), stationId))
             .filter(item -> keyword == null || keyword.isBlank()
                 || item.name().toLowerCase().contains(keyword.toLowerCase())
@@ -463,6 +486,7 @@ public class StrategyDataService {
             "statusType", statusMeta.tagType(),
             "stationId", row.stationId(),
             "stationName", row.stationName(),
+            "resourceUnitId", row.resourceUnitId(),
             "companyId", row.companyId(),
             "companyName", row.companyName(),
             "region", row.region(),
@@ -517,5 +541,9 @@ public class StrategyDataService {
 
     private double valueOrZero(Double value) {
         return value == null ? 0 : value;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }

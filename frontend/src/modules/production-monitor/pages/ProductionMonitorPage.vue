@@ -33,15 +33,6 @@
         :active-key="currentViewKey"
         @change="handleTabChange"
       />
-      <production-monitor-filter-bar
-        :query="query"
-        :region-options="meta.regionOptions"
-        :city-options="cityOptions"
-        :resource-unit-options="resourceUnitOptions"
-        @search="handleSearch"
-        @export="handleExport"
-        @refresh="loadCurrentView"
-      />
       <component
         :is="currentViewComponent"
         :key="currentViewKey"
@@ -97,7 +88,6 @@ import {
   fetchStationArchiveRealtime,
   fetchStationArchiveStrategy
 } from '@/api/pvms'
-import ProductionMonitorFilterBar from '../components/ProductionMonitorFilterBar.vue'
 import ProductionMonitorHero from '../components/ProductionMonitorHero.vue'
 import ProductionMonitorTabNav from '../components/ProductionMonitorTabNav.vue'
 import ProductionDispatchView from '../components/views/ProductionDispatchView.vue'
@@ -120,7 +110,6 @@ export default {
   components: {
     ProductionDispatchView,
     ProductionLoadView,
-    ProductionMonitorFilterBar,
     ProductionMonitorHero,
     ProductionMonitorTabNav,
     ProductionOutputView,
@@ -168,9 +157,15 @@ export default {
     secondaryMode() {
       return this.currentViewKey === 'station' ? 'station' : 'overview'
     },
+    moduleFilter() {
+      return this.$store.getters['stationContext/getModuleFilter']('production-monitor')
+    },
     currentResourceUnit() {
+      const resourceUnitId = this.query.resourceUnitId || this.meta.defaultResourceUnitId
       return (
-        this.meta.resourceUnits.find(item => item.id === this.query.resourceUnitId) || {}
+        this.meta.resourceUnits.find(item => item.id === resourceUnitId) ||
+        this.meta.resourceUnits[0] ||
+        {}
       )
     },
     cityOptions() {
@@ -209,22 +204,13 @@ export default {
         this.loadCurrentView()
       }
     },
-    '$route.query.resourceUnitId': {
-      async handler(resourceUnitId) {
-        if (!resourceUnitId || !this.meta.resourceUnits.length) {
-          return
+    moduleFilter: {
+      deep: true,
+      async handler(value) {
+        this.applyGlobalQuery(value || {})
+        if (this.secondaryMode === 'overview') {
+          await this.loadCurrentView()
         }
-
-        const matched = this.meta.resourceUnits.find(item => item.id === resourceUnitId)
-        if (!matched || matched.id === this.query.resourceUnitId) {
-          return
-        }
-
-        this.query = {
-          ...this.query,
-          resourceUnitId: matched.id
-        }
-        await this.loadCurrentView()
       }
     }
   },
@@ -252,31 +238,18 @@ export default {
       }
     },
     bootstrapQuery() {
-      const routeResourceUnitId = this.$route.query.resourceUnitId
-      const defaultResourceUnit =
-        this.meta.resourceUnits.find(item => item.id === routeResourceUnitId) ||
-        this.meta.resourceUnits.find(
-          item => item.id === this.meta.defaultResourceUnitId
-        ) ||
-        this.meta.resourceUnits[0]
-
-      if (!defaultResourceUnit) {
-        return
-      }
-
+      this.applyGlobalQuery(this.moduleFilter || {})
+    },
+    applyGlobalQuery(filter) {
       this.query = {
         ...this.query,
-        region: '',
-        city: '',
-        resourceUnitId: defaultResourceUnit.id
+        resourceUnitId: filter.resourceUnitId || '',
+        stationId: filter.stationId || '',
+        date: filter.date || this.query.date,
+        granularity: filter.granularity || this.query.granularity || '15m'
       }
-      this.syncRouteQuery()
     },
     async loadCurrentView() {
-      if (!this.query.resourceUnitId && this.currentViewKey !== 'load') {
-        return
-      }
-
       this.loadingView = true
 
       try {
@@ -307,12 +280,7 @@ export default {
     handleTabChange(viewKey) {
       const target = this.tabs.find(item => item.key === viewKey)
       if (target && target.path !== this.$route.path) {
-        this.$router.push({
-          path: target.path,
-          query: {
-            resourceUnitId: this.query.resourceUnitId
-          }
-        })
+        this.$router.push(target.path)
       }
     },
     async handleSearch(nextQuery) {
@@ -346,7 +314,6 @@ export default {
       }
 
       this.query = normalizedQuery
-      this.syncRouteQuery()
       await this.loadCurrentView()
     },
     syncRouteQuery() {

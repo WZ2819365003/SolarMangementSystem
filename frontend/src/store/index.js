@@ -2,11 +2,15 @@ import Vue from 'vue'
 import Vuex from 'vuex'
 import appSettings from '@/settings'
 import { buildRuntimeContext, syncDocumentTitle } from '@/shared/host/bridge'
+import stationContext from './modules/stationContext'
 
 Vue.use(Vuex)
 
 export default function createStore() {
   return new Vuex.Store({
+    modules: {
+      stationContext
+    },
     state: {
       appName: appSettings.appName,
       appVersion: appSettings.version,

@@ -12,6 +12,7 @@ public interface ForecastStationMapper {
         String name,
         String companyId,
         String companyName,
+        String resourceUnitId,
         String region,
         double capacityKwp,
         String status,

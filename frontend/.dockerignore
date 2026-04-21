@@ -1,0 +1,7 @@
+node_modules
+dist
+.claude
+tests
+serve-m02.log
+serve-m02.err.log
+vendor/hs-dtk-ui

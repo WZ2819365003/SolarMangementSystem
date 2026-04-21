@@ -1,15 +1,14 @@
 #!/bin/bash
-# 使用 utf8mb4 字符集执行初始化 SQL，避免中文乱码
-set -e
 
-echo "[init] Importing schema..."
-mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" \
-  --default-character-set=utf8mb4 \
-  "${MYSQL_DATABASE}" < /sql/01_schema.sql
+# 构建后端
+cd ../backend
+mvn clean package -DskipTests
 
-echo "[init] Importing data..."
-mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" \
-  --default-character-set=utf8mb4 \
-  "${MYSQL_DATABASE}" < /sql/02_data.sql
+# 构建前端
+cd ../frontend
+npm install
+npm run build
 
-echo "[init] Done."
+# 构建并运行 Docker 容器
+cd ../docker
+docker-compose up -d --build

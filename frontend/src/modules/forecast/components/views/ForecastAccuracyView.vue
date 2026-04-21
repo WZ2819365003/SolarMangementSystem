@@ -392,7 +392,24 @@ export default {
             data: counts,
             barWidth: '60%',
             itemStyle: {
-              color: '#409EFF'
+              color: function(params) {
+                // 计算偏差大小，中间 bins 偏差较小，两侧偏差较大
+                var center = Math.floor(bins.length / 2);
+                var distance = Math.abs(params.dataIndex - center);
+                var maxDistance = center;
+                var intensity = distance / maxDistance;
+                
+                // 从绿色（小偏差）到红色（大偏差）的渐变
+                if (intensity < 0.3) {
+                  return '#67C23A'; // 绿色
+                } else if (intensity < 0.6) {
+                  return '#E6A23C'; // 黄色
+                } else if (intensity < 0.8) {
+                  return '#F56C6C'; // 橙色
+                } else {
+                  return '#F5222D'; // 红色
+                }
+              }
             }
           },
           {

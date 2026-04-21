@@ -8,17 +8,6 @@
       @change="handleTabChange"
     />
 
-    <strategy-filter-bar
-      :view-key="currentViewKey"
-      :query="query"
-      :resource-unit-options="meta.resourceUnitOptions"
-      :all-station-options="meta.allStations"
-      :type-options="meta.typeOptions"
-      :status-options="meta.statusOptions"
-      @search="handleSearch"
-      @refresh="loadCurrentView"
-    />
-
     <component
       :is="currentViewComponent"
       :key="currentViewKey"
@@ -34,7 +23,6 @@
 <script>
 import StrategyHero from '../components/StrategyHero.vue'
 import StrategyTabNav from '../components/StrategyTabNav.vue'
-import StrategyFilterBar from '../components/StrategyFilterBar.vue'
 import {
   fetchStrategyMeta,
   fetchStrategyTree,
@@ -57,7 +45,6 @@ export default {
   components: {
     StrategyHero,
     StrategyTabNav,
-    StrategyFilterBar,
     StrategyListView: () => import('../components/views/StrategyListView.vue'),
     StrategyConfigView: () => import('../components/views/StrategyConfigView.vue'),
     StrategyRevenueView: () => import('../components/views/StrategyRevenueView.vue')
@@ -79,14 +66,6 @@ export default {
         statusOptions: [],
         priceTemplate: []
       },
-      query: {
-        resourceUnitId: '',
-        stationId: '',
-        type: '',
-        status: '',
-        keyword: '',
-        dateRange: []
-      },
       viewData: {},
       loadingView: false
     }
@@ -97,11 +76,33 @@ export default {
     },
     currentViewComponent() {
       return viewComponentMap[this.currentViewKey] || viewComponentMap.list
+    },
+    filterKey() {
+      return this.$route.meta.filterKey || 'strategy:list'
+    },
+    moduleFilter() {
+      return this.$store.getters['stationContext/getModuleFilter'](this.filterKey)
+    },
+    query() {
+      return Object.assign({
+        resourceUnitId: '',
+        stationId: '',
+        type: '',
+        status: '',
+        keyword: '',
+        dateRange: []
+      }, this.moduleFilter || {})
     }
   },
   watch: {
     currentViewKey() {
       this.loadCurrentView()
+    },
+    moduleFilter: {
+      deep: true,
+      handler() {
+        this.loadCurrentView()
+      }
     }
   },
   async created() {
@@ -121,7 +122,7 @@ export default {
             return { label: item.name, value: item.id }
           }),
           allStations: (data.stations || []).map(function (item) {
-            return { label: item.name, value: item.id, companyId: item.companyId }
+            return { label: item.name, value: item.id, resourceUnitId: item.resourceUnitId }
           }),
           typeOptions: (data.types || []).map(function (item) {
             return { label: item.label, value: item.value }
@@ -130,10 +131,6 @@ export default {
             return { label: item.label, value: item.value }
           }),
           priceTemplate: data.pricePeriods || []
-        }
-
-        if (!this.query.stationId && data.defaultStationId) {
-          this.query.stationId = data.defaultStationId
         }
       } catch (error) {
         console.error('[StrategyPage] failed to load meta', error)
@@ -206,10 +203,6 @@ export default {
       if (tab && this.$route.path !== tab.path) {
         this.$router.push(tab.path)
       }
-    },
-    handleSearch(nextQuery) {
-      this.query = { ...this.query, ...nextQuery }
-      this.loadCurrentView()
     }
   }
 }

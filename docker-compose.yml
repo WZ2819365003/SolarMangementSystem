@@ -1,0 +1,76 @@
+# =====================================================================
+# PVMS — 光伏管理系统部署编排（ARM64）
+# =====================================================================
+# 三服务拓扑：
+#   mysql      (3307)  — 预置 schema + 波动化种子数据
+#   backend    (8091)  — Spring Boot，依赖 mysql 健康
+#   frontend   (6618)  — Nginx 静态资源 + /api 反向代理到 backend
+#
+# 使用：
+#   docker compose up -d           # 启动
+#   docker compose logs -f backend # 跟踪后端日志
+#   docker compose down            # 停止
+#   docker compose down -v         # 停止并清除数据卷
+# =====================================================================
+name: pvms
+
+services:
+  mysql:
+    image: pvms-mysql:${PVMS_VERSION:-2.2.1}
+    platform: linux/arm64
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+    container_name: pvms-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_DATABASE: pvms
+      TZ: Asia/Shanghai
+    ports:
+      - "3307:3306"
+    volumes:
+      - pvms-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    image: pvms-backend:${PVMS_VERSION:-2.2.1}
+    platform: linux/arm64
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pvms-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/pvms?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: "123456"
+      TZ: Asia/Shanghai
+    ports:
+      - "8091:8091"
+
+  frontend:
+    image: pvms-frontend:${PVMS_VERSION:-2.2.1}
+    platform: linux/arm64
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pvms-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "6618:80"
+    environment:
+      TZ: Asia/Shanghai
+
+volumes:
+  pvms-mysql-data:
+    name: pvms-mysql-data

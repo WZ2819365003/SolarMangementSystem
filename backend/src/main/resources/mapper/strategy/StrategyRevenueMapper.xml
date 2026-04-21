@@ -7,12 +7,13 @@
         SELECT rd.strategy_id, rd.biz_date, rd.estimated_revenue_cny, rd.actual_revenue_cny,
                rd.peak_saving_cny, rd.response_reward_cny, rd.penalty_cny,
                sg.name AS strategy_name, sg.type, sg.status,
-               sg.station_id, st.name AS station_name,
+               sg.station_id, st.name AS station_name, ps.resource_unit_id,
                sg.company_id, co.name AS company_name, co.region
         FROM sg_revenue_daily rd
         JOIN sg_strategy sg ON sg.id = rd.strategy_id
         JOIN sa_station st ON st.id = sg.station_id
         JOIN sa_company co ON co.id = sg.company_id
+        LEFT JOIN pm_station ps ON ps.id = sg.station_id
         ORDER BY rd.biz_date DESC, sg.updated_at DESC
     </select>
 
@@ -20,12 +21,13 @@
         SELECT rd.strategy_id, rd.biz_date, rd.estimated_revenue_cny, rd.actual_revenue_cny,
                rd.peak_saving_cny, rd.response_reward_cny, rd.penalty_cny,
                sg.name AS strategy_name, sg.type, sg.status,
-               sg.station_id, st.name AS station_name,
+               sg.station_id, st.name AS station_name, ps.resource_unit_id,
                sg.company_id, co.name AS company_name, co.region
         FROM sg_revenue_daily rd
         JOIN sg_strategy sg ON sg.id = rd.strategy_id
         JOIN sa_station st ON st.id = sg.station_id
         JOIN sa_company co ON co.id = sg.company_id
+        LEFT JOIN pm_station ps ON ps.id = sg.station_id
         WHERE rd.biz_date BETWEEN #{startDate} AND #{endDate}
         ORDER BY rd.biz_date DESC, sg.updated_at DESC
     </select>

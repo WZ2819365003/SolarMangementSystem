@@ -9,6 +9,7 @@
                co.region,
                co.sort_index AS company_sort_index,
                st.id AS station_id,
+               ps.resource_unit_id,
                st.name AS station_name,
                st.capacity_kwp,
                st.status AS station_status,
@@ -19,9 +20,10 @@
                SUM(CASE WHEN sg.status = 'pending' THEN 1 ELSE 0 END) AS pending_count
         FROM sa_company co
         JOIN sa_station st ON st.company_id = co.id
+        LEFT JOIN pm_station ps ON ps.id = st.id
         LEFT JOIN sg_strategy sg ON sg.station_id = st.id
         GROUP BY co.id, co.name, co.region, co.sort_index,
-                 st.id, st.name, st.capacity_kwp, st.status, st.data_quality, st.sort_index
+                 st.id, ps.resource_unit_id, st.name, st.capacity_kwp, st.status, st.data_quality, st.sort_index
         ORDER BY co.sort_index, st.sort_index
     </select>
 

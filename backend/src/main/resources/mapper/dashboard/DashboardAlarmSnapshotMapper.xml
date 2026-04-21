@@ -39,6 +39,11 @@
             SUM(CASE WHEN level = 'minor' THEN 1 ELSE 0 END) AS minor,
             SUM(CASE WHEN level = 'hint' THEN 1 ELSE 0 END) AS hint
         FROM dashboard_alarm_snapshot
+        <where>
+            <if test="stationId != null and stationId != ''">
+                AND station_id = #{stationId}
+            </if>
+        </where>
     </select>
 
 </mapper>

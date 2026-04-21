@@ -65,6 +65,9 @@ public class ProductionMonitorDataService {
             "regionOptions", buildRegionOptions(resourceUnits),
             "resourceUnits", resourceUnits.stream()
                 .map(unit -> mapMetaUnit(unit, stationsByUnit.getOrDefault(unit.id(), List.of())))
+                .toList(),
+            "stations", stationSnapshotMapper.findAll().stream()
+                .map(this::mapMetaStation)
                 .toList()
         );
     }
@@ -348,9 +351,24 @@ public class ProductionMonitorDataService {
             "statusColor", meta.color(),
             "clusterRadiusKm", unit.clusterRadiusKm(),
             "stationCount", stations.size(),
+            "stationIds", stations.stream().map(ProductionMonitorStationSnapshotMapper.StationSnapshotRow::id).toList(),
             "dispatchMode", unit.dispatchMode(),
             "strategyLabel", unit.strategyLabel(),
             "dispatchableCapacityMw", calculateDispatchableCapacityMw(stations)
+        );
+    }
+
+    private Map<String, Object> mapMetaStation(ProductionMonitorStationSnapshotMapper.StationSnapshotRow station) {
+        return orderedMap(
+            "id", station.id(),
+            "name", station.name(),
+            "resourceUnitId", station.resourceUnitId(),
+            "capacityMw", round(station.capacityMw(), 1),
+            "status", station.status(),
+            "statusLabel", resolveStatusLabel(station.status()),
+            "onlineRate", round(station.onlineRate(), 1),
+            "alarmCount", station.alarmCount(),
+            "sortIndex", station.sortIndex()
         );
     }
 

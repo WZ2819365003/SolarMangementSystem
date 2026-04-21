@@ -8,14 +8,6 @@
       @change="handleTabChange"
     />
 
-    <forecast-filter-bar
-      :query="query"
-      :resource-unit-options="meta.resourceUnitOptions"
-      :all-station-options="meta.allStations"
-      @search="handleSearch"
-      @refresh="loadCurrentView"
-    />
-
     <component
       :is="currentViewComponent"
       :key="currentViewKey"
@@ -29,9 +21,7 @@
 <script>
 import ForecastHero from '../components/ForecastHero.vue'
 import ForecastTabNav from '../components/ForecastTabNav.vue'
-import ForecastFilterBar from '../components/ForecastFilterBar.vue'
 import {
-  fetchForecastMeta,
   fetchForecastOverview,
   fetchForecastAdjustable,
   fetchForecastAccuracy,
@@ -50,7 +40,6 @@ export default {
   components: {
     ForecastHero,
     ForecastTabNav,
-    ForecastFilterBar,
     ForecastOverviewView: () => import('../components/views/ForecastOverviewView.vue'),
     ForecastAdjustableView: () => import('../components/views/ForecastAdjustableView.vue'),
     ForecastAccuracyView: () => import('../components/views/ForecastAccuracyView.vue')
@@ -62,16 +51,6 @@ export default {
         { key: 'adjustable', label: '可调能力分析', path: '/forecast/adjustable' },
         { key: 'accuracy', label: '精度评估', path: '/forecast/accuracy' }
       ],
-      meta: {
-        resourceUnitOptions: [],
-        allStations: []
-      },
-      query: {
-        resourceUnitId: '',
-        stationId: '',
-        dateRange: [],
-        forecastType: 'day-ahead'
-      },
       viewData: {},
       loadingView: false
     }
@@ -82,33 +61,33 @@ export default {
     },
     currentViewComponent() {
       return viewComponentMap[this.currentViewKey] || viewComponentMap.overview
+    },
+    moduleFilter() {
+      return this.$store.getters['stationContext/getModuleFilter']('forecast')
+    },
+    query() {
+      return Object.assign({
+        resourceUnitId: '',
+        stationId: '',
+        dateRange: []
+      }, this.moduleFilter || {})
     }
   },
   watch: {
     currentViewKey() {
       this.loadCurrentView()
+    },
+    moduleFilter: {
+      deep: true,
+      handler() {
+        this.loadCurrentView()
+      }
     }
   },
   created() {
-    this.loadMeta()
     this.loadCurrentView()
   },
   methods: {
-    async loadMeta() {
-      try {
-        var res = await fetchForecastMeta()
-        if (res.data) {
-          this.meta.resourceUnitOptions = (res.data.resourceUnits || []).map(function (ru) {
-            return { label: ru.name, value: ru.id, id: ru.id }
-          })
-          this.meta.allStations = (res.data.stations || []).map(function (s) {
-            return { label: s.name, value: s.id, companyId: s.companyId }
-          })
-        }
-      } catch (e) {
-        console.error('[ForecastPage] 加载元数据失败', e)
-      }
-    },
     async loadCurrentView() {
       this.loadingView = true
       try {
@@ -116,7 +95,7 @@ export default {
         var params = {
           resourceUnitId: this.query.resourceUnitId,
           stationId: this.query.stationId,
-          forecastType: this.query.forecastType
+          forecastType: 'day-ahead'
         }
         if (this.query.dateRange && this.query.dateRange.length === 2) {
           params.startDate = this.query.dateRange[0]
@@ -152,10 +131,6 @@ export default {
       if (tab && this.$route.path !== tab.path) {
         this.$router.push(tab.path)
       }
-    },
-    handleSearch(newQuery) {
-      this.query = { ...this.query, ...newQuery }
-      this.loadCurrentView()
     }
   }
 }

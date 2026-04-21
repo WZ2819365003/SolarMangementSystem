@@ -35,5 +35,5 @@ public interface DashboardAlarmSnapshotMapper {
 
     List<AlarmSnapshotRow> findRecent(@Param("level") String level, @Param("stationId") String stationId);
 
-    AlarmSummary summary();
+    AlarmSummary summary(@Param("level") String level, @Param("stationId") String stationId);
 }

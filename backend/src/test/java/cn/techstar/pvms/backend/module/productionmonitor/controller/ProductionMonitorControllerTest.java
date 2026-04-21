@@ -25,7 +25,11 @@ class ProductionMonitorControllerTest {
             .andExpect(jsonPath("$.code").value(0))
             .andExpect(jsonPath("$.data.defaultResourceUnitId").value("RU-001"))
             .andExpect(jsonPath("$.data.resourceUnits.length()").value(6))
-            .andExpect(jsonPath("$.data.resourceUnits[0].clusterRadiusKm").value(8));
+            .andExpect(jsonPath("$.data.resourceUnits[0].clusterRadiusKm").value(8))
+            .andExpect(jsonPath("$.data.resourceUnits[0].stationIds.length()").value(4))
+            .andExpect(jsonPath("$.data.stations.length()").value(21))
+            .andExpect(jsonPath("$.data.stations[0].id").value("SZ-001"))
+            .andExpect(jsonPath("$.data.stations[0].resourceUnitId").value("RU-001"));
     }
 
     @Test

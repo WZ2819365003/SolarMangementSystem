@@ -37,11 +37,6 @@
           <span slot="title">{{ item.label }}</span>
         </el-menu-item>
       </el-menu>
-
-      <div class="pv-shell__env">
-        <span class="pv-shell__env-badge">{{ runtime.hostMode ? 'Host' : 'Standalone' }}</span>
-        <p>当前骨架已按宿主主题变量和微前端协议初始化。</p>
-      </div>
     </aside>
 
     <section class="pv-shell__main">
@@ -69,6 +64,8 @@
         </div>
       </header>
 
+      <global-filter-bar v-if="$route.meta && $route.meta.filterKey" />
+
       <main class="pv-shell__content">
         <router-view />
       </main>
@@ -77,8 +74,13 @@
 </template>
 
 <script>
+import GlobalFilterBar from '@/components/GlobalFilterBar.vue'
+
 export default {
   name: 'ShellLayout',
+  components: {
+    GlobalFilterBar
+  },
   computed: {
     appName() {
       return this.$store.state.appName

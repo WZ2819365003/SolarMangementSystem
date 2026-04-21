@@ -1,14 +1,8 @@
-# 使用预构建的 dist/ 目录，绕过 hs-dtk-ui 本地路径依赖问题
-FROM nginx:1.27-alpine
+FROM arm64v8/nginx:alpine
 
-# 删除默认配置
-RUN rm /etc/nginx/conf.d/default.conf
-
-# 拷贝 nginx 配置
-COPY docker/nginx.conf /etc/nginx/conf.d/pvms.conf
-
-# 拷贝前端构建产物到 /pvms/ 路径（与 publicPath 一致）
 COPY frontend/dist /usr/share/nginx/html/pvms
+
+COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 

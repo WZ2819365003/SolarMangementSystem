@@ -876,7 +876,7 @@ function buildInverterRealtime(inverterId) {
 // ---------------------------------------------------------------------------
 
 var stationArchiveMockHandlers = {
-  '/pvms/station-tree': function (options) {
+  '/pvms/station-tree': function () {
     return buildSuccess({ tree: buildFullTree() })
   },
   '/pvms/station-archive/company-overview': function (options) {
