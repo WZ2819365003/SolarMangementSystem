@@ -69,8 +69,7 @@ export default {
       return Object.assign({
         resourceUnitId: '',
         stationId: '',
-        dateRange: [],
-        forecastType: 'day-ahead'
+        dateRange: []
       }, this.moduleFilter || {})
     }
   },
@@ -96,7 +95,7 @@ export default {
         var params = {
           resourceUnitId: this.query.resourceUnitId,
           stationId: this.query.stationId,
-          forecastType: this.query.forecastType
+          forecastType: 'day-ahead'
         }
         if (this.query.dateRange && this.query.dateRange.length === 2) {
           params.startDate = this.query.dateRange[0]

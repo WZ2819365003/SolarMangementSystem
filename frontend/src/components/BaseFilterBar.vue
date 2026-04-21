@@ -388,7 +388,7 @@ export { HIER_FIELDS }
   --pv-filter-padding: 18px 20px;
 
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: var(--pv-filter-gap);
   padding: var(--pv-filter-padding);
@@ -396,6 +396,7 @@ export { HIER_FIELDS }
   border-radius: 4px;
   background: var(--pvms-panel, rgba(10, 30, 60, 0.82));
   box-shadow: var(--pvms-shadow-soft, 0 6px 20px rgba(0, 0, 0, 0.18));
+  flex-wrap: wrap;
 }
 
 .pv-filter-bar--compact {
@@ -405,9 +406,10 @@ export { HIER_FIELDS }
 
 .pv-filter-bar__form {
   display: grid;
-  gap: 14px 16px;
+  gap: 10px 12px;
   flex: 1;
   min-width: 0;
+  min-height: 40px;
 }
 
 .pv-filter-bar__form /deep/ .el-form-item {
@@ -415,12 +417,14 @@ export { HIER_FIELDS }
   display: flex;
   align-items: center;
   min-width: 0;
+  white-space: nowrap;
 }
 
 .pv-filter-bar__form /deep/ .el-form-item__label {
   color: var(--pvms-text-muted, rgba(255, 255, 255, 0.55));
   padding-right: 8px;
   flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .pv-filter-bar__form /deep/ .el-form-item__content {
@@ -432,6 +436,7 @@ export { HIER_FIELDS }
 .pv-filter-bar__form /deep/ .el-date-editor,
 .pv-filter-bar__form /deep/ .el-input {
   width: 100%;
+  min-width: 120px;
 }
 
 .pv-filter-bar__actions {
@@ -439,6 +444,7 @@ export { HIER_FIELDS }
   gap: 8px;
   flex-wrap: nowrap;
   align-items: center;
+  min-height: 40px;
 }
 
 @media (max-width: 1500px) {
@@ -453,6 +459,13 @@ export { HIER_FIELDS }
 
   .pv-filter-bar__actions {
     justify-content: flex-end;
+    margin-top: 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .pv-filter-bar__form {
+    grid-template-columns: 1fr !important;
   }
 }
 </style>

@@ -13,16 +13,13 @@
             @change="handleStationSelect"
           >
             <el-option
-              v-for="item in stationOptions"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            />
-          </el-select>
-          <el-tag size="mini" effect="plain" type="success">
-            Mock 数据演示
-          </el-tag>
-        </div>
+            v-for="item in stationOptions"
+            :key="item.id"
+            :label="item.name"
+            :value="item.id"
+          />
+        </el-select>
+      </div>
         <div class="dashboard-overview__hero-meta">
           <div class="pv-text-muted">
             当前聚焦：{{ selectedStationName }}

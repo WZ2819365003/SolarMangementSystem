@@ -216,10 +216,17 @@ export default {
 
 <style lang="less" scoped>
 .global-filter-bar {
-  padding: 12px 28px 0;
+  padding: 0;
+  margin-bottom: 20px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .global-filter-bar /deep/ .pv-filter-bar {
   align-items: center;
+  width: 100%;
+  max-width: 100%;
+  border-radius: 6px;
+  box-shadow: var(--pvms-shadow-soft, 0 6px 20px rgba(0, 0, 0, 0.18));
 }
 </style>

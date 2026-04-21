@@ -60,15 +60,28 @@ public class DashboardMapDataService {
     }
 
     public Map<String, Object> getRecentAlarms(String level, String stationId) {
-        DashboardAlarmSnapshotMapper.AlarmSummary summary = alarmSnapshotMapper.summary();
+        DashboardAlarmSnapshotMapper.AlarmSummary summary = alarmSnapshotMapper.summary(level, stationId);
         List<DashboardAlarmSnapshotMapper.AlarmSnapshotRow> items = alarmSnapshotMapper.findRecent(level, stationId);
+
+        // 处理summary为null的情况
+        long critical = 0;
+        long major = 0;
+        long minor = 0;
+        long hint = 0;
+        
+        if (summary != null) {
+            critical = summary.critical();
+            major = summary.major();
+            minor = summary.minor();
+            hint = summary.hint();
+        }
 
         return orderedMap(
             "summary", orderedMap(
-                "critical", summary.critical(),
-                "major", summary.major(),
-                "minor", summary.minor(),
-                "hint", summary.hint()
+                "critical", critical,
+                "major", major,
+                "minor", minor,
+                "hint", hint
             ),
             "items", items.stream().map(this::mapAlarm).toList()
         );
@@ -330,7 +343,7 @@ public class DashboardMapDataService {
     // ============= Overview =============
     public Map<String, Object> getOverview() {
         List<DashboardStationGeoMapper.StationGeoRow> stations = stationGeoMapper.findAll();
-        DashboardAlarmSnapshotMapper.AlarmSummary alarmSummary = alarmSnapshotMapper.summary();
+        DashboardAlarmSnapshotMapper.AlarmSummary alarmSummary = alarmSnapshotMapper.summary(null, null);
         List<DashboardAlarmSnapshotMapper.AlarmSnapshotRow> alarms = alarmSnapshotMapper.findRecent(null, null);
         List<Map<String, Object>> summaryCards = List.of(
             orderedMap("key", "totalCapacity", "label", "总装机", "value", round(stations.stream().mapToDouble(DashboardStationGeoMapper.StationGeoRow::capacityKwp).sum() / 1000, 1), "unit", "MW"),

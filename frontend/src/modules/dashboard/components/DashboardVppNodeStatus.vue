@@ -46,6 +46,23 @@
           <span :style="{ width: `${Math.max(8, payload.strategyExecutionRate || 0)}%` }" />
         </div>
       </section>
+      <section class="dashboard-vpp-node-status__tile is-purple">
+        <div class="dashboard-vpp-node-status__label">平均响应时间</div>
+        <div class="dashboard-vpp-node-status__value">
+          {{ payload.avgResponseTime || 0 }}
+          <span class="dashboard-vpp-node-status__unit">s</span>
+        </div>
+      </section>
+      <section class="dashboard-vpp-node-status__tile is-pink">
+        <div class="dashboard-vpp-node-status__label">响应成功率</div>
+        <div class="dashboard-vpp-node-status__value">
+          {{ payload.responseSuccessRate || 0 }}
+          <span class="dashboard-vpp-node-status__unit">%</span>
+        </div>
+        <div class="dashboard-vpp-node-status__progress">
+          <span :style="{ width: `${Math.max(8, payload.responseSuccessRate || 0)}%` }" />
+        </div>
+      </section>
     </div>
   </article>
 </template>
@@ -158,4 +175,6 @@ export default {
 .is-blue { box-shadow: inset 0 0 0 1px rgba(64, 158, 255, 0.14); }
 .is-emerald { box-shadow: inset 0 0 0 1px rgba(0, 181, 120, 0.14); }
 .is-orange { box-shadow: inset 0 0 0 1px rgba(245, 155, 35, 0.14); }
+.is-purple { box-shadow: inset 0 0 0 1px rgba(139, 92, 246, 0.14); }
+.is-pink { box-shadow: inset 0 0 0 1px rgba(236, 72, 153, 0.14); }
 </style>

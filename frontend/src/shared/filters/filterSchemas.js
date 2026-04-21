@@ -37,20 +37,12 @@ export const filterSchemas = {
     defaults: {
       resourceUnitId: '',
       stationId: '',
-      dateRange: [],
-      forecastType: 'day-ahead'
+      dateRange: []
     },
     fields: [
       { key: 'resourceUnitId', label: '资源单元', type: 'hier-resource-unit' },
       { key: 'stationId', label: '电站', type: 'hier-station' },
-      { key: 'dateRange', label: '日期范围', type: 'date-range', span: 2 },
-      {
-        key: 'forecastType',
-        label: '预测类型',
-        type: 'radio',
-        default: 'day-ahead',
-        options: FILTER_SCHEMA_DEFAULTS.forecastTypeOptions
-      }
+      { key: 'dateRange', label: '日期范围', type: 'date-range', span: 2 }
     ]
   },
   'strategy:list': {

@@ -21,7 +21,7 @@
     <section class="pv-split-grid">
       <app-section-card title="设备分布" subtitle="按设备类型统计">
         <div class="pv-group-list">
-          <div v-for="item in deviceGroups" :key="item.label" class="pv-group-list__row">
+          <div v-for="item in pagedDeviceGroups" :key="item.label" class="pv-group-list__row">
             <span>{{ item.label }}</span>
             <div class="pv-group-list__track">
               <span :style="{ width: item.ratio + '%' }" />
@@ -29,6 +29,16 @@
             <span class="pv-text-muted">{{ item.ratio }}%</span>
           </div>
         </div>
+        <el-pagination
+          small
+          background
+          layout="total, prev, pager, next"
+          :page-size="deviceGroupPageSize"
+          :current-page="deviceGroupCurrentPage"
+          :total="deviceGroups.length"
+          style="margin-top: 12px; text-align: right;"
+          @current-change="val => deviceGroupCurrentPage = val"
+        />
       </app-section-card>
 
       <app-section-card title="运维提示" subtitle="模拟值班建议">
@@ -118,7 +128,9 @@ export default {
       maintenanceTips: [],
       rows: [],
       currentPage: 1,
-      pageSize: 10
+      pageSize: 10,
+      deviceGroupCurrentPage: 1,
+      deviceGroupPageSize: 4
     }
   },
   computed: {
@@ -134,6 +146,10 @@ export default {
     pagedRows() {
       var start = (this.currentPage - 1) * this.pageSize
       return this.filteredRows.slice(start, start + this.pageSize)
+    },
+    pagedDeviceGroups() {
+      var start = (this.deviceGroupCurrentPage - 1) * this.deviceGroupPageSize
+      return this.deviceGroups.slice(start, start + this.deviceGroupPageSize)
     }
   },
   created() {
@@ -148,6 +164,7 @@ export default {
       this.maintenanceTips = response.data.maintenanceTips
       this.rows = response.data.rows
       this.currentPage = 1
+      this.deviceGroupCurrentPage = 1
     }
   }
 }

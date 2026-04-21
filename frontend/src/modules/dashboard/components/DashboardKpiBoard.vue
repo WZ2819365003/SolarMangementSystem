@@ -85,6 +85,52 @@ export default {
         }
         map[label].push(item)
       })
+      
+      // 添加天气卡片
+      map['环境与天气'] = [
+        {
+          key: 'weather',
+          title: '当前天气',
+          value: '28°C',
+          unit: '',
+          icon: 'el-icon-sunny',
+          accent: 'yellow',
+          helper: '晴 · 湿度 55% · 风速 2.3m/s',
+          group: '环境与天气'
+        },
+        {
+          key: 'humidity',
+          title: '湿度',
+          value: '55',
+          unit: '%',
+          icon: 'el-icon-water',
+          accent: 'blue',
+          helper: '相对湿度',
+          group: '环境与天气'
+        },
+        {
+          key: 'wind',
+          title: '风速',
+          value: '2.3',
+          unit: 'm/s',
+          icon: 'el-icon-wind-power',
+          accent: 'teal',
+          helper: '当前风速',
+          group: '环境与天气'
+        },
+        {
+          key: 'irradiance',
+          title: '辐照度',
+          value: '850',
+          unit: 'W/m²',
+          icon: 'el-icon-sunny',
+          accent: 'orange',
+          helper: '太阳辐照度',
+          group: '环境与天气'
+        }
+      ]
+      order.push('环境与天气')
+      
       return order.map(function (label) {
         return { label: label, items: map[label] }
       })
@@ -232,6 +278,10 @@ export default {
 
 .is-orange {
   --pvms-accent: #f59b23;
+}
+
+.is-yellow {
+  --pvms-accent: #ffb800;
 }
 
 @media (max-width: 768px) {
