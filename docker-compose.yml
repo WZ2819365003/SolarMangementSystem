@@ -26,13 +26,14 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: "123456"
       MYSQL_DATABASE: pvms
+      MYSQL_ROOT_HOST: "%"
       TZ: Asia/Shanghai
     ports:
       - "3307:3306"
     volumes:
       - pvms-mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysql", "-uroot", "-p123456", "-e", "SELECT 1 FROM pvms.station_info LIMIT 1"]
+      test: ["CMD", "mysql", "-uroot", "-p123456", "pvms", "-e", "SELECT 1 FROM dashboard_station LIMIT 1"]
       interval: 10s
       timeout: 5s
       retries: 15
