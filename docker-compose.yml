@@ -32,10 +32,11 @@ services:
     volumes:
       - pvms-mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p123456"]
+      test: ["CMD", "mysql", "-uroot", "-p123456", "-e", "SELECT 1 FROM pvms.station_info LIMIT 1"]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 15
+      start_period: 30s
 
   backend:
     image: pvms-backend:${PVMS_VERSION:-2.2.1}
