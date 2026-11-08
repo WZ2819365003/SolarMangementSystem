@@ -7,11 +7,12 @@ import cn.techstar.pvms.backend.module.stationarchive.repository.StationArchiveC
 import cn.techstar.pvms.backend.module.strategy.model.StrategyRequest;
 import cn.techstar.pvms.backend.module.strategy.repository.StrategyMetaMapper;
 import cn.techstar.pvms.backend.module.strategy.repository.StrategyPriceMapper;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -196,7 +197,7 @@ public class StrategySimulationService {
         return metaMapper.findStations().stream()
             .filter(item -> Objects.equals(item.id(), stationId))
             .findFirst()
-            .orElse(metaMapper.findStations().stream().min(Comparator.comparingInt(StrategyMetaMapper.StationRow::sortIndex)).orElseThrow());
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "电站不存在：" + stationId));
     }
 
     private LocalDate resolveBizDate(StrategyRequest request) {

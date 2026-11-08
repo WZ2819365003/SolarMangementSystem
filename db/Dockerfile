@@ -6,9 +6,8 @@
 # ============================================================
 FROM mysql:8.0
 
-# Runtime environment — operators override MYSQL_ROOT_PASSWORD via compose
+# Runtime environment — MYSQL_ROOT_PASSWORD must be supplied at runtime (see .env.example)
 ENV MYSQL_DATABASE=pvms \
-    MYSQL_ROOT_PASSWORD=123456 \
     MYSQL_CHARSET=utf8mb4 \
     MYSQL_COLLATION=utf8mb4_unicode_ci \
     LANG=C.UTF-8
@@ -17,7 +16,6 @@ ENV MYSQL_DATABASE=pvms \
 # 01 -> schema, 02 -> varied seed data
 COPY 01-schema.sql /docker-entrypoint-initdb.d/01-schema.sql
 COPY 02-data.sql   /docker-entrypoint-initdb.d/02-data.sql
-COPY 99-access.sql /docker-entrypoint-initdb.d/99-access.sql
 
 # Persist auth plugin so Spring Boot can connect without
 # caching_sha2_password surprises

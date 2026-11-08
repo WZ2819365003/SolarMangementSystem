@@ -5,12 +5,12 @@ services:
     image: arm64v8/mysql:8.0
     container_name: pvms-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?请设置 MYSQL_ROOT_PASSWORD}"
       MYSQL_DATABASE: pvms
       MYSQL_USER: pvms
-      MYSQL_PASSWORD: pvms
+      MYSQL_PASSWORD: "${MYSQL_APP_PASSWORD:?请设置 MYSQL_APP_PASSWORD}"
     ports:
-      - "3307:3306"
+      - "127.0.0.1:3307:3306"
     volumes:
       - ./mysql-data:/var/lib/mysql
       - ../sql/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -24,11 +24,13 @@ services:
     depends_on:
       - pvms-mysql
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://pvms-mysql:3306/pvms?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: pvms
-      SPRING_DATASOURCE_PASSWORD: pvms
+      SPRING_DATASOURCE_PASSWORD: "${MYSQL_APP_PASSWORD:?请设置 MYSQL_APP_PASSWORD}"
+      PVMS_AUTH_USERNAME: "${PVMS_AUTH_USERNAME:-admin}"
+      PVMS_AUTH_PASSWORD: "${PVMS_AUTH_PASSWORD:?请设置 PVMS_AUTH_PASSWORD}"
     restart: always
 
   pvms-frontend:

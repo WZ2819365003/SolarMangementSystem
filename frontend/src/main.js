@@ -5,7 +5,7 @@ import Vuex from 'vuex'
 import App from './App.vue'
 import createRouter from './router'
 import createStore from './store'
-import { initializeHostBridge } from './shared/host/bridge'
+import { initializeHostBridge, setUnauthorizedHandler } from './shared/host/bridge'
 import { applyAmapSecurityConfig } from './shared/plugins/amap'
 import './styles/index.less'
 import './shared/plugins/echarts'
@@ -28,6 +28,13 @@ function render(props = {}) {
   router = createRouter(window.__POWERED_BY_QIANKUN__ ? baseUrl : (process.env.BASE_URL || '/'))
   store = createStore()
   store.dispatch('initApp', props)
+  setUnauthorizedHandler(() => {
+    const { name, fullPath } = router.currentRoute
+    if (name !== 'login') {
+      // 多个并发请求同时 401 时后续跳转会被取消，属于预期情况
+      router.replace({ name: 'login', query: { redirect: fullPath } }).catch(() => {})
+    }
+  })
 
   vueInst = new Vue({
     router,

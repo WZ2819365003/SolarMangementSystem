@@ -1,5 +1,7 @@
 server:
   port: 8091
+  # 经 Nginx 代理时取真实客户端 IP，登录失败锁定按 IP 计数
+  forward-headers-strategy: native
 
 spring:
   application:

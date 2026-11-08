@@ -1,5 +1,7 @@
 import VueRouter from 'vue-router'
+import { getAuthToken, isAuthRequired } from '@/shared/host/bridge'
 import ShellLayout from '@/layouts/ShellLayout.vue'
+import LoginPage from '@/modules/auth/pages/LoginPage.vue'
 import OverviewPage from '@/modules/dashboard/pages/OverviewPage.vue'
 import DeviceMonitorPage from '@/modules/devices/pages/DeviceMonitorPage.vue'
 import AlarmCenterPage from '@/modules/alarms/pages/AlarmCenterPage.vue'
@@ -201,15 +203,38 @@ const routes = [
     ]
   },
   {
+    path: '/login',
+    name: 'login',
+    component: LoginPage,
+    meta: {
+      title: '登录',
+      public: true
+    }
+  },
+  {
     path: '*',
     redirect: '/dashboard/overview'
   }
 ]
 
 export default function createRouter(base = '/') {
-  return new VueRouter({
+  const router = new VueRouter({
     mode: 'history',
     base,
     routes
   })
+
+  router.beforeEach((to, from, next) => {
+    if (!isAuthRequired()) {
+      next()
+    } else if (getAuthToken()) {
+      next(to.name === 'login' ? '/' : undefined)
+    } else if (to.meta.public) {
+      next()
+    } else {
+      next({ name: 'login', query: { redirect: to.fullPath } })
+    }
+  })
+
+  return router
 }
