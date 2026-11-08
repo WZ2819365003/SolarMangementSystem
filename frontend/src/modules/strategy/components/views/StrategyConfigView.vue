@@ -317,6 +317,7 @@ import {
   terminateStrategy,
   batchDeleteStrategy
 } from '@/api/pvms'
+import { getRequestErrorMessage } from '@/shared/host/bridge'
 
 function buildDefaultSlots() {
   return Array.from({ length: 10 }, function (_, i) {
@@ -554,7 +555,7 @@ export default {
         this.revenueProbability = data.successProbability || 0
         this.$message.success('收益计算完成')
       } catch (e) {
-        this.$message.error('收益计算失败')
+        this.$message.error(getRequestErrorMessage(e, '收益计算失败'))
       } finally {
         this.calcLoading = false
       }
@@ -570,7 +571,7 @@ export default {
         this.dialogVisible = false
         this.$emit('refresh')
       } catch (e) {
-        this.$message.error('保存失败')
+        this.$message.error(getRequestErrorMessage(e, '保存失败'))
       } finally {
         this.saveLoading = false
       }

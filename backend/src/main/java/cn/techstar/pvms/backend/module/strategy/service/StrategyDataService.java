@@ -6,8 +6,10 @@ import cn.techstar.pvms.backend.module.strategy.repository.StrategyPriceMapper;
 import cn.techstar.pvms.backend.module.strategy.repository.StrategyRecordMapper;
 import cn.techstar.pvms.backend.module.strategy.repository.StrategyRevenueMapper;
 import cn.techstar.pvms.backend.module.strategy.repository.StrategyTreeMapper;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -308,7 +310,11 @@ public class StrategyDataService {
     }
 
     private Map<String, Object> updateStatus(String id, String nextStatus, String action, String result) {
-        StrategyRecordMapper.StrategyRow row = resolveStrategy(id);
+        // 写操作不能走 resolveStrategy 的回退逻辑，否则错误的 id 会改到第一条策略
+        StrategyRecordMapper.StrategyRow row = recordMapper.findById(id, StrategySupport.DEFAULT_BIZ_DATE);
+        if (row == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "策略不存在：" + id);
+        }
         LocalDateTime updatedAt = LocalDateTime.of(2026, 3, 30, 14, 35);
         recordMapper.updateStatus(row.id(), nextStatus, updatedAt);
         recordMapper.insertExecutionLog(new StrategyRecordMapper.ExecutionLogMutationRow(
@@ -357,7 +363,7 @@ public class StrategyDataService {
         return metaMapper.findStations().stream()
             .filter(item -> Objects.equals(item.id(), stationId))
             .findFirst()
-            .orElseThrow();
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "电站不存在：" + stationId));
     }
 
     private String nextStrategyId() {

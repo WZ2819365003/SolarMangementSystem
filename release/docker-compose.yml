@@ -1,33 +1,36 @@
 # =====================================================================
-# PVMS v2.2.0 — 生产部署编排（ARM64）
+# PVMS — 生产部署编排（ARM64）
 # =====================================================================
-# 先执行：docker load -i pvms-images-2.2.0-arm64.tar.gz
-# 再执行：docker compose up -d
+# 先执行：docker load -i pvms-images-<版本>-arm64.tar.gz
+# 再填写 .env（参考仓库根目录 .env.example，PVMS_VERSION 填包含鉴权修复的镜像版本）
+# 最后执行：docker compose up -d
 # =====================================================================
 name: pvms
 
 services:
   mysql:
-    image: pvms-mysql:2.2.0
+    image: pvms-mysql:${PVMS_VERSION:?请在 .env 中设置 PVMS_VERSION}
     platform: linux/arm64
     container_name: pvms-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?请在 .env 中设置 MYSQL_ROOT_PASSWORD}"
       MYSQL_DATABASE: pvms
+      MYSQL_ROOT_HOST: "%"
       TZ: Asia/Shanghai
     ports:
-      - "3307:3306"
+      - "127.0.0.1:3307:3306"
     volumes:
       - pvms-mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p123456"]
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_ROOT_PASSWORD\" mysql -uroot pvms -e 'SELECT 1 FROM dashboard_station LIMIT 1'"]
       interval: 10s
       timeout: 5s
-      retries: 12
+      retries: 15
+      start_period: 30s
 
   backend:
-    image: pvms-backend:2.2.0
+    image: pvms-backend:${PVMS_VERSION:?请在 .env 中设置 PVMS_VERSION}
     platform: linux/arm64
     container_name: pvms-backend
     restart: unless-stopped
@@ -37,14 +40,16 @@ services:
     environment:
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/pvms?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: "123456"
+      SPRING_DATASOURCE_PASSWORD: "${MYSQL_ROOT_PASSWORD:?请在 .env 中设置 MYSQL_ROOT_PASSWORD}"
+      PVMS_AUTH_USERNAME: "${PVMS_AUTH_USERNAME:-admin}"
+      PVMS_AUTH_PASSWORD: "${PVMS_AUTH_PASSWORD:?请在 .env 中设置 PVMS_AUTH_PASSWORD}"
       JAVA_OPTS: "-Xms256m -Xmx768m"
       TZ: Asia/Shanghai
     ports:
-      - "8091:8091"
+      - "127.0.0.1:8091:8091"
 
   frontend:
-    image: pvms-frontend:2.2.0
+    image: pvms-frontend:${PVMS_VERSION:?请在 .env 中设置 PVMS_VERSION}
     platform: linux/arm64
     container_name: pvms-frontend
     restart: unless-stopped

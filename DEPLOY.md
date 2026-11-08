@@ -129,19 +129,22 @@ docker compose -f docker/docker-compose.yml up -d --build --force-recreate
 |----------|--------|------|
 | `SPRING_DATASOURCE_URL` | `jdbc:mysql://pvms-mysql:3306/pvms?...` | 数据库连接地址（容器内已配置为服务名） |
 | `SPRING_DATASOURCE_USERNAME` | `root` | 数据库用户名 |
-| `SPRING_DATASOURCE_PASSWORD` | `123456` | 数据库密码 |
+| `SPRING_DATASOURCE_PASSWORD` | 无，部署时必填 | 数据库密码 |
+| `PVMS_AUTH_USERNAME` | `admin` | 系统登录账号 |
+| `PVMS_AUTH_PASSWORD` | 无，部署时必填 | 系统登录口令，至少 12 位 |
+| `PVMS_AUTH_TOKEN_TTL` | `8h` | 登录令牌有效期 |
 
-**生产环境请修改密码**，在 `docker/docker-compose.yml` 中调整：
+口令放在 compose 文件同目录的 `.env` 中（不提交到 git），缺失时 `docker compose` 会拒绝启动：
 
-```yaml
-pvms-mysql:
-  environment:
-    MYSQL_ROOT_PASSWORD: "your-strong-password"
-
-pvms-backend:
-  environment:
-    SPRING_DATASOURCE_PASSWORD: "your-strong-password"
+```bash
+MYSQL_ROOT_PASSWORD=<强口令>
+MYSQL_APP_PASSWORD=<强口令>
+PVMS_AUTH_PASSWORD=<至少 12 位的强口令>
 ```
+
+根目录和 `release/` 的编排只用 `MYSQL_ROOT_PASSWORD`，模板见 [.env.example](.env.example)。
+
+`MYSQL_ROOT_PASSWORD` 只在数据卷首次初始化时生效。已有数据卷要改口令，先在库内对 `root@'%'` 和 `root@'localhost'` 执行 `ALTER USER`，再更新 `.env` 并重启后端。
 
 ---
 
@@ -150,8 +153,8 @@ pvms-backend:
 | 容器 | 容器内端口 | 宿主机映射端口 | 用途 |
 |------|-----------|--------------|------|
 | pvms-frontend | 80 | 80 | 前端页面 + API 代理 |
-| pvms-backend | 8091 | 8091 | Spring Boot REST API |
-| pvms-mysql | 3306 | 3306 | MySQL 数据库 |
+| pvms-backend | 8080 | 127.0.0.1:8080 | Spring Boot REST API，仅宿主机可访问 |
+| pvms-mysql | 3306 | 127.0.0.1:3307 | MySQL 数据库，仅宿主机可访问 |
 
 若宿主机 80 端口被占用，修改 `docker-compose.yml`：
 

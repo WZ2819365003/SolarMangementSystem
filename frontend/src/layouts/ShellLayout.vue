@@ -61,6 +61,14 @@
               {{ runtime.hostMode ? '宿主挂载模式' : '本地预览模式' }}
             </div>
           </div>
+          <el-button
+            v-if="authRequired"
+            type="text"
+            data-testid="logout"
+            @click="handleLogout"
+          >
+            退出
+          </el-button>
         </div>
       </header>
 
@@ -75,13 +83,23 @@
 
 <script>
 import GlobalFilterBar from '@/components/GlobalFilterBar.vue'
+import { isAuthRequired, logout } from '@/shared/host/bridge'
 
 export default {
   name: 'ShellLayout',
   components: {
     GlobalFilterBar
   },
+  methods: {
+    async handleLogout() {
+      await logout()
+      this.$router.replace({ name: 'login' })
+    }
+  },
   computed: {
+    authRequired() {
+      return isAuthRequired()
+    },
     appName() {
       return this.$store.state.appName
     },

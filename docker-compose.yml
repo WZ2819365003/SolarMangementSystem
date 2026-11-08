@@ -2,11 +2,12 @@
 # PVMS — 光伏管理系统部署编排（ARM64）
 # =====================================================================
 # 三服务拓扑：
-#   mysql      (3307)  — 预置 schema + 波动化种子数据
-#   backend    (8091)  — Spring Boot，依赖 mysql 健康
-#   frontend   (6618)  — Nginx 静态资源 + /api 反向代理到 backend
+#   mysql      (127.0.0.1:3307)  — 预置 schema + 波动化种子数据，仅宿主机可访问
+#   backend    (127.0.0.1:8091)  — Spring Boot，依赖 mysql 健康，仅宿主机可访问
+#   frontend   (6618)            — Nginx 静态资源 + /api 反向代理到 backend，唯一对外入口
 #
 # 使用：
+#   cp .env.example .env           # 首次部署：填写口令
 #   docker compose up -d           # 启动
 #   docker compose logs -f backend # 跟踪后端日志
 #   docker compose down            # 停止
@@ -16,7 +17,7 @@ name: pvms
 
 services:
   mysql:
-    image: pvms-mysql:${PVMS_VERSION:-2.2.1}
+    image: pvms-mysql:${PVMS_VERSION:-2.3.0}
     platform: linux/arm64
     build:
       context: ./db
@@ -24,22 +25,23 @@ services:
     container_name: pvms-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?请在 .env 中设置 MYSQL_ROOT_PASSWORD}"
       MYSQL_DATABASE: pvms
+      MYSQL_ROOT_HOST: "%"
       TZ: Asia/Shanghai
     ports:
-      - "3307:3306"
+      - "127.0.0.1:3307:3306"
     volumes:
       - pvms-mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysql", "-uroot", "-p123456", "-e", "SELECT 1 FROM pvms.station_info LIMIT 1"]
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_ROOT_PASSWORD\" mysql -uroot pvms -e 'SELECT 1 FROM dashboard_station LIMIT 1'"]
       interval: 10s
       timeout: 5s
       retries: 15
       start_period: 30s
 
   backend:
-    image: pvms-backend:${PVMS_VERSION:-2.2.1}
+    image: pvms-backend:${PVMS_VERSION:-2.3.0}
     platform: linux/arm64
     build:
       context: ./backend
@@ -52,13 +54,15 @@ services:
     environment:
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/pvms?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: "123456"
+      SPRING_DATASOURCE_PASSWORD: "${MYSQL_ROOT_PASSWORD:?请在 .env 中设置 MYSQL_ROOT_PASSWORD}"
+      PVMS_AUTH_USERNAME: "${PVMS_AUTH_USERNAME:-admin}"
+      PVMS_AUTH_PASSWORD: "${PVMS_AUTH_PASSWORD:?请在 .env 中设置 PVMS_AUTH_PASSWORD}"
       TZ: Asia/Shanghai
     ports:
-      - "8091:8091"
+      - "127.0.0.1:8091:8091"
 
   frontend:
-    image: pvms-frontend:${PVMS_VERSION:-2.2.1}
+    image: pvms-frontend:${PVMS_VERSION:-2.3.0}
     platform: linux/arm64
     build:
       context: ./frontend

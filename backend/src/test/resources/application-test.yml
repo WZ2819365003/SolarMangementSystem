@@ -10,6 +10,11 @@ spring:
       schema-locations: classpath:schema.sql
       data-locations: classpath:data.sql
 
+pvms:
+  auth:
+    username: test-admin
+    password: test-only-password
+
 mybatis:
   mapper-locations: classpath:mapper/**/*.xml
   type-aliases-package: cn.techstar.pvms.backend

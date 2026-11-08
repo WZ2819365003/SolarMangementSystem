@@ -7,6 +7,8 @@ import cn.techstar.pvms.backend.module.strategy.model.StrategyRequest;
 import cn.techstar.pvms.backend.module.strategy.service.StrategyDataService;
 import cn.techstar.pvms.backend.module.strategy.service.StrategyRevenueService;
 import cn.techstar.pvms.backend.module.strategy.service.StrategySimulationService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -79,43 +81,43 @@ public class StrategyController {
     }
 
     @PostMapping("/create")
-    public ApiResponse<Map<String, Object>> create(@RequestBody StrategyRequest request) {
+    public ApiResponse<Map<String, Object>> create(@Valid @RequestBody StrategyRequest request) {
         return ApiResponse.success(strategyDataService.createStrategy(request));
     }
 
     @PostMapping("/batch-create")
-    public ApiResponse<Map<String, Object>> batchCreate(@RequestBody StrategyBatchRequest request) {
-        return ApiResponse.success(strategyDataService.batchCreateStrategies(request == null ? List.of() : request.strategies()));
+    public ApiResponse<Map<String, Object>> batchCreate(@Valid @RequestBody StrategyBatchRequest request) {
+        return ApiResponse.success(strategyDataService.batchCreateStrategies(request.strategies()));
     }
 
     @PostMapping("/submit")
-    public ApiResponse<Map<String, Object>> submit(@RequestParam String id) {
+    public ApiResponse<Map<String, Object>> submit(@RequestParam @NotBlank(message = "id 不能为空") String id) {
         return ApiResponse.success(strategyDataService.submitStrategy(id));
     }
 
     @PostMapping("/terminate")
-    public ApiResponse<Map<String, Object>> terminate(@RequestParam String id) {
+    public ApiResponse<Map<String, Object>> terminate(@RequestParam @NotBlank(message = "id 不能为空") String id) {
         return ApiResponse.success(strategyDataService.terminateStrategy(id));
     }
 
     @PostMapping("/batch-submit")
-    public ApiResponse<Map<String, Object>> batchSubmit(@RequestBody StrategyIdsRequest request) {
-        return ApiResponse.success(strategyDataService.batchSubmit(request == null ? List.of() : request.ids()));
+    public ApiResponse<Map<String, Object>> batchSubmit(@Valid @RequestBody StrategyIdsRequest request) {
+        return ApiResponse.success(strategyDataService.batchSubmit(request.ids()));
     }
 
     @PostMapping("/batch-delete")
-    public ApiResponse<Map<String, Object>> batchDelete(@RequestBody StrategyIdsRequest request) {
-        return ApiResponse.success(strategyDataService.batchDelete(request == null ? List.of() : request.ids()));
+    public ApiResponse<Map<String, Object>> batchDelete(@Valid @RequestBody StrategyIdsRequest request) {
+        return ApiResponse.success(strategyDataService.batchDelete(request.ids()));
     }
 
     @PostMapping("/simulate")
-    public ApiResponse<Map<String, Object>> simulate(@RequestBody StrategyRequest request) {
+    public ApiResponse<Map<String, Object>> simulate(@Valid @RequestBody StrategyRequest request) {
         return ApiResponse.success(strategySimulationService.simulatePayload(request));
     }
 
     @PostMapping("/batch-simulate")
-    public ApiResponse<Map<String, Object>> batchSimulate(@RequestBody StrategyBatchRequest request) {
-        return ApiResponse.success(strategySimulationService.batchSimulatePayload(request == null ? List.of() : request.strategies()));
+    public ApiResponse<Map<String, Object>> batchSimulate(@Valid @RequestBody StrategyBatchRequest request) {
+        return ApiResponse.success(strategySimulationService.batchSimulatePayload(request.strategies()));
     }
 
     @GetMapping("/revenue/summary")

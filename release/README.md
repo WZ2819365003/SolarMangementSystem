@@ -17,7 +17,7 @@
 | Docker Compose | ≥ 2.20（内置于 Docker Desktop / 可单独安装） | `docker compose version` |
 | 硬件 | 4 vCPU / 4 GB RAM / 10 GB 磁盘 | 建议 |
 | 出站网络 | 无需公网（镜像已离线打包） | 仅部署阶段需要 |
-| 端口 | **6618**（前端）、**8091**（后端）、**3307**（数据库） | 防火墙需放行 |
+| 端口 | **6618**（前端） | 防火墙只放行此端口；8091、3307 仅绑定 127.0.0.1 |
 
 ## 2. 部署步骤
 
@@ -54,6 +54,15 @@ docker images | grep pvms
 
 ### 2.3 启动服务
 
+先在 `docker-compose.yml` 同目录创建 `.env`（不要提交到 git）。`PVMS_VERSION` 填包含鉴权修复的镜像版本，`PVMS_AUTH_PASSWORD` 至少 12 位：
+
+```bash
+PVMS_VERSION=<镜像版本>
+MYSQL_ROOT_PASSWORD=<强口令>
+PVMS_AUTH_USERNAME=admin
+PVMS_AUTH_PASSWORD=<强口令>
+```
+
 ```bash
 docker compose up -d
 ```
@@ -71,9 +80,10 @@ docker compose logs -f backend   # Ctrl+C 退出
 
 | 检查项 | 命令 / 操作 | 期望结果 |
 |---|---|---|
-| 数据库连通 | `docker exec pvms-mysql mysql -uroot -p123456 -e "SELECT COUNT(*) FROM pvms.sa_station"` | 16 |
-| 后端健康 | `curl -s http://localhost:8091/api/pvms/dashboard/stations-geo \| head -c 80` | 返回 JSON `code:0` |
-| 前端页面 | 浏览器访问 `http://<服务器 IP>:6618/pvms/` | 加载综合监控中心 |
+| 数据库连通 | `docker exec -it pvms-mysql mysql -uroot -p -e "SELECT COUNT(*) FROM pvms.sa_station"`（按提示输入口令） | 16 |
+| 后端健康 | `curl -s http://localhost:8091/api/system/health` | 返回 JSON `code:0` |
+| 接口鉴权 | `curl -s -o /dev/null -w '%{http_code}' http://localhost:8091/api/pvms/station-tree` | 401 |
+| 前端页面 | 浏览器访问 `http://<服务器 IP>:6618/pvms/` 并用 `.env` 中的账号登录 | 加载综合监控中心 |
 | 地图功能 | 打开首页检查"GIS 电站总览"卡 | 高德地图加载 + 电站标记点 |
 
 ## 3. 常用运维命令
@@ -110,8 +120,8 @@ docker compose up -d
 | 服务 | 宿主机端口 | 容器端口 | 说明 |
 |---|---|---|---|
 | Frontend (Nginx) | 6618 | 80 | 浏览器访问入口 |
-| Backend (Spring Boot) | 8091 | 8091 | 被前端 Nginx 反向代理 |
-| MySQL 8 | 3307 | 3306 | 运维 DBA 诊断用（可关闭） |
+| Backend (Spring Boot) | 127.0.0.1:8091 | 8091 | 被前端 Nginx 反向代理，仅宿主机可访问 |
+| MySQL 8 | 127.0.0.1:3307 | 3306 | 运维 DBA 诊断用，仅宿主机可访问 |
 
 **最终用户只需访问**：`http://<主机 IP>:6618/pvms/`
 
@@ -119,12 +129,11 @@ docker compose up -d
 
 ### 5.1 修改数据库密码
 
-编辑 `docker-compose.yml`，三处同步改：
-- `services.mysql.environment.MYSQL_ROOT_PASSWORD`
-- `services.backend.environment.SPRING_DATASOURCE_PASSWORD`
-- `services.mysql.healthcheck.test` 中的 `-p` 参数
+`MYSQL_ROOT_PASSWORD` 只在数据卷首次初始化时生效。已有数据卷要改口令且保留数据时：
 
-之后 `docker compose down -v && docker compose up -d`（会清空现有数据）。
+1. 进入数据库，对 `root@'%'` 和 `root@'localhost'` 执行 `ALTER USER ... IDENTIFIED BY '<新口令>'`。
+2. 更新 `.env` 中的 `MYSQL_ROOT_PASSWORD`。
+3. 执行 `docker compose up -d` 重建容器。
 
 ### 5.2 修改前端 API 代理目标
 
